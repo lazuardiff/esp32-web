@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Swell - Device Detail</title>
+    <link rel="stylesheet" href="css/swell-styles.css">
+</head>
+
+<body>
+    <!-- Device Detail Page -->
+    <div class="container" id="detail-page">
+        <div class="stars" id="stars"></div>
+
+        <a href="swell-homepage.html" class="back-link">
+            <div class="back-button">←</div>
+        </a>
+
+        <div class="device-card">
+            <div class="device-icon">
+                <img src="media/icons/ActiveDevice.png" alt="Lamp" class="device-img">
+            </div>
+            <div class="device-info">
+                <div class="device-name">This device is Off</div>
+                <div class="device-status">Not connected</div>
+            </div>
+        </div>
+
+        <div class="feature-section">
+            <h2 class="feature-title">Features</h2>
+
+            <!-- Timer Feature Card - Must be configured first -->
+            <div class="feature-card collapsible primary-feature" id="timer-card">
+                <div class="feature-left">
+                    <div class="feature-icon">⏰</div>
+                    <div><span class="bold">Timer</span>: <span id="timer-status">OFF</span></div>
+                </div>
+                <div class="toggle" id="timer-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+
+            <!-- Timer expanded controls -->
+            <div class="expanded-controls" id="timer-controls">
+                <div class="timer-notification">
+                    <p>Set timer to activate features during specified hours.</p>
+                </div>
+                <div class="control-group">
+                    <div class="timer-controls">
+                        <div class="time-input-group">
+                            <label for="start-time">Start Time:</label>
+                            <input type="time" id="start-time" class="time-input" value="22:00">
+                        </div>
+                        <div class="time-input-group">
+                            <label for="end-time">End Time:</label>
+                            <input type="time" id="end-time" class="time-input" value="06:00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add confirmation button -->
+                <div class="confirm-button-wrapper">
+                    <button id="timer-confirm-button" class="confirm-button">Konfirmasi Timer</button>
+                </div>
+
+                <div class="timer-confirmation" id="timer-confirmation">
+                    <div class="confirmation-icon">✓</div>
+                    <div class="confirmation-message">Timer set successfully!</div>
+                </div>
+            </div>
+
+            <!-- Night Lights Feature Card -->
+            <div class="feature-card collapsible feature-dependent" id="light-card">
+                <div class="feature-left">
+                    <div class="feature-icon">☀️</div>
+                    <div><span class="bold">Night Lights</span></div> <!-- Status ON/OFF tidak lagi relevan -->
+                </div>
+                <!-- Toggle sudah dihapus, karena fitur ini sekarang otomatis -->
+                <div class="dependency-notice">Enable timer first</div>
+            </div>
+
+            <!-- Expanded light controls -->
+            <div class="expanded-controls" id="light-controls">
+                <div class="control-group">
+                    <label for="intensity-slider" class="control-label">Intensity:</label>
+                    <div class="volume-control-wrapper">
+                        <input type="range" id="intensity-slider" min="0" max="100" value="50" class="volume-slider">
+                        <span class="intensity-value">50%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aromatherapy Feature Card - Initially with shadow overlay -->
+            <div class="feature-card feature-dependent">
+                <div class="feature-left">
+                    <div class="feature-icon">💨</div>
+                    <div><span class="bold">Aromatherapy</span>: <span id="aroma-status">OFF</span></div>
+                </div>
+                <div class="toggle dependent-disabled" id="aroma-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <div class="dependency-notice">Enable timer first</div>
+            </div>
+
+            <!-- Alarm Feature Card - Initially with shadow overlay -->
+            <div class="feature-card feature-dependent">
+                <div class="feature-left">
+                    <div class="feature-icon">🔔</div>
+                    <div><span class="bold">Alarm</span>: <span id="alarm-status">OFF</span></div>
+                </div>
+                <div class="toggle dependent-disabled" id="alarm-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <div class="dependency-notice">Enable timer first</div>
+            </div>
+
+            <!-- Relax Music Feature Card - Initially with shadow overlay -->
+            <div class="feature-card collapsible feature-dependent" id="music-card">
+                <div class="feature-left">
+                    <div class="feature-icon">🎵</div>
+                    <div><span class="bold">Relax Music</span>: <span id="music-status">OFF</span></div>
+                </div>
+                <div class="toggle dependent-disabled" id="music-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <div class="dependency-notice">Enable timer first</div>
+            </div>
+
+            <!-- Expanded music controls (initially hidden) -->
+            <div class="expanded-controls" id="music-controls">
+                <div class="control-group">
+                    <label for="song-select" class="control-label">Select Song:</label>
+                    <select id="song-select" class="song-dropdown">
+                        <option value="rainforest">Rainforest Sounds</option>
+                        <option value="ocean">Ocean Waves</option>
+                        <option value="night">Night Ambience</option>
+                        <option value="meditation">Meditation Music</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="volume-slider" class="control-label">Volume:</label>
+                    <div class="volume-control-wrapper">
+                        <input type="range" id="volume-slider" min="0" max="100" value="50" class="volume-slider">
+                        <span class="volume-value">50%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/swell-script.js"></script>
+    <script>
+        // Add this right after the main script to show a frontend-only notice
+        document.addEventListener('DOMContentLoaded', function () {
+            // Create frontend-only mode notice
+            const notice = document.createElement('div');
+            notice.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(247, 163, 37, 0.9); ' +
+                'color: white; padding: 8px 12px; border-radius: 5px; font-size: 12px; z-index: 9999;';
+            notice.textContent = 'Frontend Demo Mode (No Backend)';
+
+            // Add to body
+            document.body.appendChild(notice);
+
+            // OVERRIDE BACKEND DEPENDENCIES FOR DEVICE DETAIL PAGE
+
+            // 1. DISABLE API STATUS CHECKS
+            if (window.checkDeviceStatus) {
+                // Store original function for reference
+                window.originalCheckDeviceStatus = window.checkDeviceStatus;
+
+                // Replace with mock function that always shows connected
+                window.checkDeviceStatus = function () {
+                    console.log("Mock device status: Connected (Frontend demo)");
+
+                    // Set device as connected in the UI
+                    const deviceNameElement = document.querySelector('.device-card .device-name');
+                    const deviceStatusElement = document.querySelector('.device-card .device-status');
+                    const deviceImage = document.querySelector('.device-card .device-img');
+
+                    if (deviceNameElement) {
+                        const savedName = localStorage.getItem('connectedDeviceName');
+                        deviceNameElement.textContent = savedName || 'Demo Smart Lamp';
+                    }
+
+                    if (deviceStatusElement) {
+                        deviceStatusElement.textContent = 'Connected (Demo Mode)';
+                    }
+
+                    if (deviceImage) {
+                        deviceImage.src = "media/icons/ActiveDevice.png";
+                    }
+
+                    // Add connected class to device card
+                    const deviceCard = document.querySelector('.device-card');
+                    if (deviceCard) {
+                        deviceCard.classList.add('connected');
+                        deviceCard.classList.remove('disconnected');
+                    }
+
+                    // Enable all controls
+                    enableAllControls();
+
+                    // Clear any reconnect overlay that might exist
+                    const overlay = document.querySelector('.reconnect-overlay');
+                    if (overlay) overlay.remove();
+                };
+            }
+
+            // 2. DISABLE OUTGOING API REQUESTS FOR TOGGLE UPDATES
+            // Replace fetch with mock function for device detail page
+            const originalFetch = window.fetch;
+            window.fetch = function (url, options) {
+                // If this is a device update request, just mock the response
+                if (url.includes('/api/device/') && url.includes('/update')) {
+                    console.log('Mock API call:', url, options ? options.body : '');
+
+                    // Return a mock successful response
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({ success: true })
+                    });
+                }
+
+                // For other requests, log but still return mock success
+                console.log('Mock API call (unhandled):', url);
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({ success: true })
+                });
+            };
+
+            // 3. ENABLE ALL CONTROLS
+            function enableAllControls() {
+                // Remove disabled class from all toggles
+                document.querySelectorAll('.toggle').forEach(toggle => {
+                    toggle.classList.remove('disabled');
+                });
+
+                // Enable all form controls
+                document.querySelectorAll('input, select').forEach(input => {
+                    input.disabled = false;
+                });
+
+                // Make all toggle switches functional
+                document.querySelectorAll('.toggle').forEach(toggle => {
+                    toggle.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        this.classList.toggle('active');
+
+                        // Handle specific toggle logic
+                        const id = this.id;
+                        const isActive = this.classList.contains('active');
+
+                        if (id === 'timer-toggle') {
+                            const statusText = document.getElementById('timer-status');
+                            if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
+
+                            // Show/hide controls if collapsible
+                            const controls = document.getElementById('timer-controls');
+                            const card = document.getElementById('timer-card');
+                            if (controls && card) {
+                                if (isActive) {
+                                    controls.classList.add('expanded');
+                                    card.classList.add('expanded');
+                                } else {
+                                    controls.classList.remove('expanded');
+                                    card.classList.remove('expanded');
+                                }
+                            }
+                        } else if (id === 'light-toggle') {
+                            const statusText = document.getElementById('light-status');
+                            if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
+
+                            // Show/hide controls if collapsible
+                            const controls = document.getElementById('light-controls');
+                            const card = document.getElementById('light-card');
+                            if (controls && card) {
+                                if (isActive) {
+                                    controls.classList.add('expanded');
+                                    card.classList.add('expanded');
+                                } else {
+                                    controls.classList.remove('expanded');
+                                    card.classList.remove('expanded');
+                                }
+                            }
+                        } else if (id === 'aroma-toggle') {
+                            const statusText = document.getElementById('aroma-status');
+                            if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
+                        } else if (id === 'alarm-toggle') {
+                            const statusText = document.getElementById('alarm-status');
+                            if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
+                        } else if (id === 'music-toggle') {
+                            const statusText = document.getElementById('music-status');
+                            if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
+
+                            // Show/hide controls
+                            const controls = document.getElementById('music-controls');
+                            const card = document.getElementById('music-card');
+                            if (controls && card) {
+                                if (isActive) {
+                                    controls.classList.add('expanded');
+                                    card.classList.add('expanded');
+                                } else {
+                                    controls.classList.remove('expanded');
+                                    card.classList.remove('expanded');
+                                }
+                            }
+                        }
+                    });
+                });
+
+                // Make music card click expand/collapse controls
+                const musicCard = document.getElementById('music-card');
+                const musicControls = document.getElementById('music-controls');
+                const musicToggle = document.getElementById('music-toggle');
+
+                if (musicCard && musicControls && musicToggle) {
+                    musicCard.addEventListener('click', function () {
+                        if (musicToggle.classList.contains('active')) {
+                            musicControls.classList.toggle('expanded');
+                            musicCard.classList.toggle('expanded');
+                        }
+                    });
+                }
+
+                // Setup volume slider value display
+                const volumeSlider = document.getElementById('volume-slider');
+                const volumeValue = document.querySelector('.volume-value');
+
+                if (volumeSlider && volumeValue) {
+                    volumeSlider.addEventListener('input', function () {
+                        volumeValue.textContent = `${this.value}%`;
+                    });
+                }
+
+                // Setup intensity slider value display
+                const intensitySlider = document.getElementById('intensity-slider');
+                const intensityValue = document.querySelector('.intensity-value');
+
+                if (intensitySlider && intensityValue) {
+                    intensitySlider.addEventListener('input', function () {
+                        intensityValue.textContent = `${this.value}%`;
+                    });
+                }
+            }
+
+            // 4. INVOKE MOCK STATUS CHECK TO INITIALIZE UI
+            setTimeout(function () {
+                // Force reconnect button to always trigger a UI refresh
+                const reconnectBtn = documentz.querySelector('.reconnect-btn');
+                if (reconnectBtn) {
+                    reconnectBtn.addEventListener('click', function () {
+                        location.reload();
+                    });
+                }
+
+                // Call our mock status check to initialize UI
+                if (window.checkDeviceStatus) {
+                    window.checkDeviceStatus();
+                } else {
+                    // Fallback if function isn't defined
+                    enableAllControls();
+                }
+            }, 300);
+
+            // 5. CLEAR STATUS CHECK INTERVALS
+            // Find and clear any intervals to prevent console errors
+            for (let i = 1; i < 100; i++) {
+                window.clearInterval(i);
+            }
+        });
+    </script>
+</body>
+
+</html>

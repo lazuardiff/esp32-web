@@ -1,0 +1,1083 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #2d2a3c;
+    /* Remove or comment out the background-image property */
+    /* background-image: url('../media/backgrounds/Background.png'); */
+    color: white;
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Add max-width for large screens to improve readability */
+    max-width: 1200px;
+}
+
+.stars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.star {
+    position: absolute;
+    background-color: #f8e278;
+    border-radius: 50%;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.logo {
+    font-size: 42px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    letter-spacing: 2px;
+}
+
+.tagline {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.section-title {
+    margin-bottom: 15px;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+.device-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.back-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.device-card {
+    background-color: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    color: #333;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.device-card.connected {
+    border-left: 4px solid #4cd964;
+}
+
+.device-card.disconnected {
+    border-left: 4px solid #ff3b30;
+}
+
+.device-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.device-icon {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.device-img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.device-info {
+    flex-grow: 1;
+}
+
+.device-name {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.device-status {
+    font-size: 14px;
+    color: #888;
+}
+
+.device-type {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 2px;
+}
+
+.add-button {
+    background-color: white;
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+    color: #888;
+    font-size: 16px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s, box-shadow 0.2s;
+    width: 100%;
+}
+
+.add-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Remove moon styles as we're no longer using it */
+/*
+.moon {
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 50%;
+    border: 4px solid white;
+    position: relative;
+    margin: 50px auto;
+    transform: rotate(-30deg);
+    box-shadow: 8px -8px 0 -3px #1e1e2f;
+    position: relative;
+    z-index: 1;
+}
+*/
+
+.clouds {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background-color: rgba(60, 60, 90, 0.3);
+    border-top-left-radius: 50%;
+    border-top-right-radius: 50%;
+    z-index: 1;
+}
+
+.debug-bar {
+    position: fixed;
+    bottom: 40px;
+    left: 0;
+    width: 100%;
+    background-color: rgba(30, 30, 47, 0.9);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 2;
+}
+
+.warning-icon {
+    width: 20px;
+    height: 20px;
+    background-color: #f7a325;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.debug-text {
+    flex-grow: 1;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.close-button {
+    width: 20px;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.bottom-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 5px;
+    background-color: white;
+    border-radius: 5px;
+    opacity: 0.5;
+    z-index: 3;
+}
+
+/* Detail Page Specific Styles */
+.back-button {
+    font-size: 24px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s;
+}
+
+.back-button:hover {
+    transform: translateX(-3px);
+}
+
+.feature-section {
+    margin-top: 30px;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-title {
+    margin-bottom: 15px;
+    opacity: 0.9;
+}
+
+.feature-card {
+    background-color: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #333;
+}
+
+.feature-left {
+    display: flex;
+    align-items: center;
+}
+
+.feature-icon {
+    margin-right: 10px;
+    font-size: 20px;
+    color: #f7a325;
+}
+
+.toggle {
+    width: 40px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toggle-slider {
+    width: 18px;
+    height: 18px;
+    background-color: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    transition: transform 0.3s;
+}
+
+.toggle.active {
+    background-color: #4cd964;
+}
+
+.toggle.active .toggle-slider {
+    transform: translateX(20px);
+}
+
+/* Disabled controls styles */
+.toggle.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input:disabled,
+select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Add bold style for feature text */
+.bold {
+    font-weight: bold;
+}
+
+/* Relax Music Feature Styles */
+.expanded-controls {
+    background-color: #f8f8f8;
+    border-radius: 0 0 15px 15px;
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    margin-top: -15px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    z-index: 1;
+}
+
+.expanded-controls.expanded {
+    padding: 15px;
+    max-height: 350px;
+    /* Increased from 250px to give more space */
+    opacity: 1;
+}
+
+.feature-card.collapsible {
+    position: relative;
+    z-index: 2;
+}
+
+.feature-card.expanded {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+}
+
+.control-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.song-dropdown {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background-color: white;
+    color: #333;
+    font-size: 14px;
+}
+
+/* Create a flex container for volume controls */
+.volume-control-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.volume-slider {
+    flex: 1;
+    /* Take most of the available space */
+}
+
+.volume-value {
+    width: 40px;
+    /* Fixed width for the indicator */
+    text-align: right;
+    color: #666;
+    flex-shrink: 0;
+    /* Prevent the indicator from shrinking */
+}
+
+/* Add specific styling for intensity value to make it black */
+.intensity-value {
+    width: 40px;
+    text-align: right;
+    color: #666;
+    /* Black color for better visibility */
+    flex-shrink: 0;
+}
+
+/* Remove the popup styles as we're not using it anymore */
+.volume-popup {
+    display: none;
+}
+
+.timer-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.time-input-group {
+    flex: 1;
+}
+
+.time-input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+.time-input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background-color: white;
+    color: #333;
+}
+
+/* Device connection styles */
+.no-devices {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 15px;
+    /* Ensure full width regardless of device size */
+    width: 100%;
+}
+
+.no-devices-found,
+.error-message,
+.scanning-message {
+    padding: 15px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.error-message {
+    color: #ff5a5a;
+}
+
+.connection-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+
+.connection-modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background-color: #1e1e2f;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 350px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.close-modal {
+    font-size: 24px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.scanning-animation {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.scanning-circle {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(76, 217, 100, 0.3);
+    border-top: 4px solid #4cd964;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.discovered-device {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.discovered-device:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.device-icon-small {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+/* Device removal styles */
+.device-container {
+    width: 100%;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.remove-device-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background-color: #ff3b30;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+}
+
+.remove-device-btn:hover {
+    background-color: #ff1a0e;
+}
+
+/* Reconnect overlay styles */
+.reconnect-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+}
+
+.reconnect-message {
+    background-color: #1e1e2f;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+}
+
+.reconnect-btn {
+    margin-top: 15px;
+    padding: 8px 16px;
+    background-color: #4cd964;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.reconnect-btn:hover {
+    background-color: #3cc153;
+}
+
+/* Device list container - make it full width */
+.device-list {
+    width: 100%;
+    display: block;
+}
+
+/* Add media query for mobile specific styles */
+@media screen and (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+
+    .logo {
+        font-size: 36px;
+    }
+
+    .feature-card {
+        padding: 12px;
+    }
+
+    .expanded-controls.expanded {
+        max-height: 400px;
+        /* Provide more space on mobile */
+    }
+}
+
+/* Responsive Design Enhancements */
+
+/* Small screens and mobile devices */
+@media screen and (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+
+    .logo {
+        font-size: 32px;
+    }
+
+    .tagline {
+        font-size: 14px;
+    }
+
+    .feature-card {
+        padding: 12px;
+        flex-wrap: wrap;
+    }
+
+    .feature-left {
+        margin-bottom: 8px;
+        width: 100%;
+    }
+
+    .toggle {
+        margin-left: auto;
+    }
+
+    .expanded-controls.expanded {
+        max-height: 450px;
+        /* Extra space for touch controls */
+        padding: 15px 10px;
+    }
+
+    .time-input {
+        padding: 10px;
+        /* Larger touch target */
+    }
+
+    .song-dropdown {
+        padding: 10px;
+        /* Larger touch target */
+    }
+
+    .device-name {
+        font-size: 16px;
+    }
+
+    .moon {
+        margin: 30px auto;
+    }
+
+    /* Make modal larger on small screens */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+    }
+
+    /* Improve touch targets */
+    .remove-device-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+    }
+
+    .back-button {
+        font-size: 28px;
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Medium-sized screens (tablets) */
+@media screen and (min-width: 601px) and (max-width: 900px) {
+    .container {
+        padding: 20px;
+        max-width: 90%;
+    }
+
+    /* Apply tablet-specific styles */
+    .feature-card {
+        padding: 15px;
+    }
+
+    .logo {
+        font-size: 38px;
+    }
+
+    .modal-content {
+        max-width: 450px;
+    }
+
+    /* Two-column layout for tablet, but ONLY when we have at least 2 devices */
+    .device-list.multi-device-2-plus {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    /* When we have at least 2 devices */
+    .device-list.multi-device-2-plus .device-container {
+        width: calc(50% - 7.5px);
+    }
+
+    /* Add button in multi-device mode with at least 2 devices */
+    .multi-device-2-plus~.add-button {
+        width: calc(50% - 7.5px);
+        margin-left: auto;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* With only 1 device, keep full width */
+    .device-list:not(.multi-device-2-plus) .device-container,
+    .device-list:not(.multi-device-2-plus)~.add-button {
+        width: 100%;
+    }
+}
+
+/* Large screens (desktops and beyond) */
+@media screen and (min-width: 901px) {
+    .container {
+        padding: 30px;
+    }
+
+    /* Apply desktop enhancements */
+    .feature-section {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Three-column layout for desktop, but ONLY when we have at least 3 devices */
+    .device-list.multi-device-3-plus {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    /* When we have at least 3 devices */
+    .device-list.multi-device-3-plus .device-container {
+        width: calc(33.33% - 13.33px);
+    }
+
+    /* Add button with at least 3 devices */
+    .multi-device-3-plus~.add-button {
+        width: calc(33.33% - 13.33px);
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* With only 1-2 devices, keep full width */
+    .device-list:not(.multi-device-3-plus) .device-container,
+    .device-list:not(.multi-device-3-plus)~.add-button {
+        width: 100%;
+    }
+
+    /* Ensure the "No devices" message spans full width */
+    .device-list .no-devices {
+        width: 100%;
+    }
+
+    /* Hover effects only on devices that support hover */
+    @media (hover: hover) {
+        .device-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .add-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+    }
+}
+
+/* Fix for iPhone notch */
+@supports (padding-top: env(safe-area-inset-top)) {
+    .container {
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+        padding-top: max(20px, env(safe-area-inset-top));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Fix for volume slider appearance on different browsers */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    /* Add standard property for compatibility */
+    width: 100%;
+    background: transparent;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    /* Add standard property for compatibility */
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #4cd964;
+    margin-top: -8px;
+    cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #4cd964;
+    cursor: pointer;
+    border: none;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+}
+
+input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+}
+
+/* Touch-friendly improvements */
+.toggle {
+    min-width: 48px;
+    /* Minimum touch target size */
+    min-height: 24px;
+}
+
+/* Primary Feature & Feature Dependencies Styles */
+.primary-feature {
+    border-left: 4px solid #f7a325;
+    /* Default orange color */
+    transition: border-color 0.3s ease;
+    /* Add transition for smooth color change */
+}
+
+/* New style for confirmed timer */
+.primary-feature.timer-confirmed {
+    border-left: 4px solid #4cd964;
+    /* Green color when confirmed */
+}
+
+.feature-dependent {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.feature-dependent::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Dark overlay */
+    border-radius: 15px;
+    z-index: 5;
+    transition: opacity 0.3s ease;
+}
+
+.dependency-notice {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 6;
+    white-space: nowrap;
+    font-weight: bold;
+    pointer-events: none;
+    /* Allows clicks to pass through */
+    transition: opacity 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.feature-dependent .toggle.dependent-disabled {
+    opacity: 0.7;
+    /* Slightly more visible within the shadowed card */
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.feature-card:not(.feature-dependent) .dependency-notice {
+    display: none;
+}
+
+.feature-dependent .toggle.dependent-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.feature-dependent .dependency-notice {
+    font-size: 12px;
+    color: #f7a325;
+    margin-right: 10px;
+}
+
+.confirm-button-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.confirm-button {
+    background-color: #f7a325;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.confirm-button:hover {
+    background-color: #e5921c;
+}
+
+.confirm-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.confirm-button.confirmed {
+    background-color: #4cd964;
+}
+
+.timer-notification {
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: rgba(247, 163, 37, 0.1);
+    border-left: 3px solid #f7a325;
+    color: #333;
+    border-radius: 5px;
+}
+
+.timer-confirmation {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(76, 217, 100, 0.1);
+    border-left: 3px solid #4cd964;
+    margin-top: 15px;
+    border-radius: 5px;
+    opacity: 0;
+    height: 0;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.timer-confirmation.visible {
+    opacity: 1;
+    height: auto;
+    padding: 10px;
+}
+
+.confirmation-icon {
+    width: 24px;
+    height: 24px;
+    background-color: #4cd964;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.confirmation-message {
+    color: #333;
+    font-size: 14px;
+}
