@@ -20,7 +20,7 @@
 
         <div class="device-card">
             <div class="device-icon">
-                <img src="media/icons/ActiveDevice.png" alt="Lamp" class="device-img">
+                <img src="media/ActiveDevice.png" alt="Lamp" class="device-img">
             </div>
             <div class="device-info">
                 <div class="device-name">This device is Off</div>
@@ -74,24 +74,38 @@
             <!-- Night Lights Feature Card -->
             <div class="feature-card collapsible feature-dependent" id="light-card">
                 <div class="feature-left">
-                    <div class="feature-icon">☀️</div>
-                    <div><span class="bold">Night Lights</span></div> <!-- Status ON/OFF tidak lagi relevan -->
+                    <div class="feature-icon">🌙</div> <!-- Changed icon to moon -->
+                    <div><span class="bold">Night Lights</span><br>
+                        <small style="color: #666;">Controls yellow light intensity during timer phase</small>
+                    </div>
                 </div>
-                <!-- Toggle sudah dihapus, karena fitur ini sekarang otomatis -->
                 <div class="dependency-notice">Enable timer first</div>
             </div>
-
             <!-- Expanded light controls -->
             <div class="expanded-controls" id="light-controls">
+                <div class="light-info-notice">
+                    <p><strong>🌙 Yellow Light:</strong> Active during timer phase (controllable intensity)</p>
+                    <p><strong>☀️ White Light:</strong> Active outside timer phase (always full brightness)</p>
+                </div>
                 <div class="control-group">
-                    <label for="intensity-slider" class="control-label">Intensity:</label>
+                    <label for="intensity-slider" class="control-label">Yellow Light Intensity:</label>
                     <div class="volume-control-wrapper">
-                        <input type="range" id="intensity-slider" min="0" max="100" value="50" class="volume-slider">
+                        <!-- ⭐ UPDATED: Tambah step="10" untuk increment 10% -->
+                        <input type="range" id="intensity-slider" min="0" max="100" value="50" step="10"
+                            class="volume-slider">
                         <span class="intensity-value">50%</span>
                     </div>
                 </div>
+                <!-- ⭐ TAMBAH: Visual indicator untuk step values -->
+                <div class="slider-steps">
+                    <span class="step-label">0%</span>
+                    <span class="step-label">20%</span>
+                    <span class="step-label">40%</span>
+                    <span class="step-label">60%</span>
+                    <span class="step-label">80%</span>
+                    <span class="step-label">100%</span>
+                </div>
             </div>
-
             <!-- Aromatherapy Feature Card - Initially with shadow overlay -->
             <div class="feature-card feature-dependent">
                 <div class="feature-left">
@@ -190,7 +204,7 @@
                     }
 
                     if (deviceImage) {
-                        deviceImage.src = "media/icons/ActiveDevice.png";
+                        deviceImage.src = "media/ActiveDevice.png";
                     }
 
                     // Add connected class to device card

@@ -113,7 +113,7 @@ function initializeHomePage() {
                 <a href="swell-device-detail.html?ip=${encodeURIComponent(device.ip)}&name=${encodeURIComponent(device.name)}" class="device-link">
                     <div class="device-card" data-ip="${device.ip}">
                         <div class="device-icon">
-                            <img src="media/icons/ActiveDevice.png" alt="Device" class="device-img">
+                            <img src="media/ActiveDevice.png" alt="Device" class="device-img">
                         </div>
                         <div class="device-info">
                             <div class="device-name">${device.name}</div>
@@ -218,15 +218,14 @@ function sendCommand(command, value) {
     }
 }
 
-// ... SALIN SEMUA FUNGSI HELPER DARI JAWABAN SEBELUMNYA KE SINI ...
 /** Menyiapkan semua event listener untuk elemen UI yang interaktif. */
 function setupEventListeners() {
-    // Listener untuk semua toggle
+    // Listener untuk semua toggle (EXCLUDE light karena sudah tidak ada light-toggle)
     document.querySelectorAll('.toggle').forEach(toggle => {
         toggle.addEventListener('click', (e) => {
-            e.stopPropagation(); // Mencegah event 'click' pada kartu induk
+            e.stopPropagation();
             const feature = e.currentTarget.id.replace('-toggle', '');
-            const isActive = !e.currentTarget.classList.contains('active'); // Status baru setelah di-klik
+            const isActive = !e.currentTarget.classList.contains('active');
 
             // Logika khusus untuk timer dependency
             if (e.currentTarget.classList.contains('dependent-disabled')) {
@@ -238,17 +237,50 @@ function setupEventListeners() {
         });
     });
 
-    // Listener untuk slider intensitas lampu
+    // Listener untuk slider intensitas dengan step validation
     document.getElementById('intensity-slider').addEventListener('input', e => {
-        const value = parseInt(e.currentTarget.value);
-        e.currentTarget.nextElementSibling.textContent = `${value}%`; // Update UI langsung untuk feedback
+        let value = parseInt(e.currentTarget.value);
+
+        // ⭐ ENFORCE: Pastikan value kelipatan 10
+        value = Math.round(value / 10) * 10;
+
+        // Update slider dan display
+        e.currentTarget.value = value;
+        e.currentTarget.nextElementSibling.textContent = `${value}%`;
+
+        // ⭐ TAMBAH: Visual feedback untuk step
+        console.log(`Intensity set to: ${value}% (PWM: ${Math.round(value / 10)})`);
+
         sendCommand('light-intensity', value);
+    });
+
+    // ⭐ TAMBAH: Event listener untuk 'change' (saat user lepas slider)
+    document.getElementById('intensity-slider').addEventListener('change', e => {
+        let value = parseInt(e.currentTarget.value);
+
+        // Snap to nearest 10%
+        value = Math.round(value / 10) * 10;
+
+        // Force update jika berbeda
+        if (e.currentTarget.value != value) {
+            e.currentTarget.value = value;
+            e.currentTarget.nextElementSibling.textContent = `${value}%`;
+            sendCommand('light-intensity', value);
+        }
+    });
+
+    // ⭐ FIXED: Light card click listener (tanpa toggle check)
+    document.getElementById('light-card').addEventListener('click', function () {
+        if (!this.classList.contains('feature-dependent')) {
+            this.classList.toggle('expanded');
+            document.getElementById('light-controls').classList.toggle('expanded');
+        }
     });
 
     // Listener untuk slider volume musik
     document.getElementById('volume-slider').addEventListener('input', e => {
         const value = parseInt(e.currentTarget.value);
-        e.currentTarget.nextElementSibling.textContent = `${value}%`; // Update UI langsung
+        e.currentTarget.nextElementSibling.textContent = `${value}%`;
         sendCommand('music-volume', value);
     });
 
@@ -265,21 +297,30 @@ function setupEventListeners() {
         sendCommand('timer-confirm', { start: startTime, end: endTime });
     });
 
-    // Listener untuk kartu yang bisa di-expand (collapsible)
+    // ⭐ FIXED: Listener untuk kartu yang bisa di-expand (dengan logic berbeda untuk light)
     document.querySelectorAll('.collapsible').forEach(card => {
         card.addEventListener('click', (e) => {
-            // Hanya expand jika toggle-nya aktif
+            // ⭐ SPECIAL CASE: Light card (no toggle check needed)
+            if (card.id === 'light-card') {
+                // Already handled by specific light-card listener above
+                return;
+            }
+
+            // ⭐ OTHER CARDS: Hanya expand jika toggle-nya aktif
             const toggle = card.querySelector('.toggle');
             if (toggle && toggle.classList.contains('active')) {
                 card.classList.toggle('expanded');
                 const controlsId = card.id.replace('-card', '-controls');
-                document.getElementById(controlsId).classList.toggle('expanded');
+                const controlsElement = document.getElementById(controlsId);
+                if (controlsElement) {
+                    controlsElement.classList.toggle('expanded');
+                }
             }
         });
     });
 }
 
-
+/** Memperbarui seluruh UI berdasarkan satu objek 'state' dari ESP32. */
 /** Memperbarui seluruh UI berdasarkan satu objek 'state' dari ESP32. */
 function updateUIFromState(state) {
     if (!state) return;
@@ -316,13 +357,32 @@ function updateUIFromState(state) {
     }
 
     // --- Update Lampu ---
-    const lightToggle = document.getElementById('light-toggle');
-    const lightStatus = document.getElementById('light-status');
+    const lightCard = document.getElementById('light-card');
+    const lightControls = document.getElementById('light-controls');
     const intensitySlider = document.getElementById('intensity-slider');
-    lightToggle.classList.toggle('active', state.light.on);
-    lightStatus.textContent = state.light.on ? 'ON' : 'OFF';
-    intensitySlider.value = state.light.intensity;
-    intensitySlider.nextElementSibling.textContent = `${state.light.intensity}%`;
+    const intensityValue = document.querySelector('.intensity-value');
+
+    if (intensitySlider && intensityValue && state.light) {
+        // Pastikan value dari backend juga kelipatan 10
+        let intensity = Math.round(state.light.intensity / 10) * 10;
+
+        intensitySlider.value = intensity;
+        intensityValue.textContent = `${intensity}%`;
+
+        // ⭐ TAMBAH: Debug info
+        console.log(`UI Updated - Intensity: ${intensity}% (PWM: ${Math.round(intensity / 10)})`);
+    }
+
+    // ⭐ Light card state tergantung timer confirmation
+    if (state.timer.confirmed) {
+        lightCard.classList.remove('feature-dependent');
+        lightCard.classList.add('expanded');
+        lightControls.classList.add('expanded');
+    } else {
+        lightCard.classList.add('feature-dependent');
+        lightCard.classList.remove('expanded');
+        lightControls.classList.remove('expanded');
+    }
 
     // --- Update Musik ---
     const musicToggle = document.getElementById('music-toggle');
@@ -340,13 +400,33 @@ function updateUIFromState(state) {
 /** Mengunci atau membuka fitur-fitur yang bergantung pada Timer. */
 function enableDependentFeatures(isEnabled) {
     document.querySelectorAll('.feature-dependent').forEach(card => {
-        const toggle = card.querySelector('.toggle');
         if (isEnabled) {
             card.classList.remove('feature-dependent');
-            toggle.classList.remove('dependent-disabled');
+
+            // ⭐ KHUSUS untuk light card: langsung expand karena always active
+            if (card.id === 'light-card') {
+                card.classList.add('expanded');
+                document.getElementById('light-controls').classList.add('expanded');
+            }
+
+            // Handle toggle untuk card lain (bukan light)
+            const toggle = card.querySelector('.toggle');
+            if (toggle) {
+                toggle.classList.remove('dependent-disabled');
+            }
         } else {
             card.classList.add('feature-dependent');
-            toggle.classList.add('dependent-disabled');
+
+            // Collapse light card jika timer tidak confirmed
+            if (card.id === 'light-card') {
+                card.classList.remove('expanded');
+                document.getElementById('light-controls').classList.remove('expanded');
+            }
+
+            const toggle = card.querySelector('.toggle');
+            if (toggle) {
+                toggle.classList.add('dependent-disabled');
+            }
         }
     });
 }
