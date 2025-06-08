@@ -2,10 +2,10 @@
  * @file main.cpp
  * @brief Swell Smart Lamp - Firmware ESP32 (Standalone & Scheduled Workflow)
  * @details
- * - Versi ini mengintegrasikan metode inisialisasi DFPlayer yang telah teruji.
- * - Volume Alarm diatur ke maksimal, volume musik dikontrol dari web.
- * - Logika tidak lagi bergantung pada input Serial, sepenuhnya dikontrol via WebSocket.
- * - Mempertahankan 6 poin alur kerja yang telah ditentukan.
+ * - FIXED VERSION: Error syntax dan struktur diperbaiki
+ * - Algoritma aromatherapy yang disempurnakan
+ * - Volume Alarm diatur ke maksimal, volume musik dikontrol dari web
+ * - Logika tidak lagi bergantung pada input Serial, sepenuhnya dikontrol via WebSocket
  */
 
 // Pustaka Inti
@@ -57,6 +57,11 @@ bool isAromatherapySpraying = false;
 unsigned long lastTimeCheck = 0;
 unsigned long alarmStopTime = 0;
 bool isAlarmPlaying = false;
+unsigned long lastAromatherapySprayStart = 0; // Kapan semprotan terakhir dimulai
+bool aromatherapyScheduleActive = false;      // Flag untuk tracking jadwal aktif
+unsigned long lastStatusBroadcast = 0;
+const unsigned long STATUS_BROADCAST_INTERVAL = 60000; // 60 detik
+bool previousMusicState = false;
 
 // Struct untuk menyimpan semua pengaturan
 struct Settings
@@ -97,7 +102,7 @@ struct Settings
 Settings currentSettings;
 
 // =================================================================
-// FUNGSI & MAKRO WAKTU KOMPILASI
+// FUNGSI & MAKRO WAKTU KOMPILASI (FIXED)
 // =================================================================
 int getCompileDayOfWeek(const char *ts)
 {
@@ -154,7 +159,22 @@ int getCompileMonth(const char *date)
 #define __TIME_DOW__ getCompileDayOfWeek(__TIMESTAMP__)
 #define __TIME_DAYS__ CONV_STR2DEC_2(__DATE__, 4)
 #define __TIME_MONTH__ getCompileMonth(__DATE__)
-#define __TIME_YEARS__ CONV_STR2DEC_2(__DATE__, 9)
+// ⭐ FIXED: Overflow issue dengan year
+#define __TIME_YEARS__ (2000 + CONV_STR2DEC_2(__DATE__, 9))
+
+// =================================================================
+// DEKLARASI FUNGSI (FIXED: untuk mengatasi error undefined)
+// =================================================================
+void saveSettings();
+void loadSettings();
+void checkAndSetRTC();
+void generateAndSendPlaylist();
+void checkAndApplySchedules();
+void checkAromatherapyLogic(int currentTimeInMinutes, int startTimeInMinutes);
+void resetAromatherapy();
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+void notifyClients();
 
 // =================================================================
 // FUNGSI INTI
@@ -193,14 +213,17 @@ void checkAndSetRTC()
         rtc.lostPowerClear();
         needsSetting = true;
     }
-    if (rtc.day() != __TIME_DAYS__ || rtc.month() != __TIME_MONTH__ || rtc.year() != __TIME_YEARS__)
+
+    // ⭐ FIXED: Casting untuk menghindari overflow warning
+    uint8_t compileYear = (uint8_t)(__TIME_YEARS__ - 2000);
+    if (rtc.day() != __TIME_DAYS__ || rtc.month() != __TIME_MONTH__ || rtc.year() != compileYear)
     {
         Serial.println("INFO: Tanggal RTC tidak akurat. Waktu akan dikalibrasi.");
         needsSetting = true;
     }
     if (needsSetting)
     {
-        rtc.set(__TIME_SECONDS__, __TIME_MINUTES__, __TIME_HOURS__, __TIME_DOW__, __TIME_DAYS__, __TIME_MONTH__, __TIME_YEARS__);
+        rtc.set(__TIME_SECONDS__, __TIME_MINUTES__, __TIME_HOURS__, __TIME_DOW__, __TIME_DAYS__, __TIME_MONTH__, compileYear);
         Serial.println("OK: Waktu RTC berhasil disetel.");
     }
     else
@@ -234,14 +257,19 @@ void generateAndSendPlaylist()
     ws.textAll(response);
 }
 
-void notifyClients(); // Deklarasi agar bisa dipanggil dari mana saja
-
 void checkAndApplySchedules()
 {
     if (!currentSettings.timer.confirmed)
     {
         ledcWrite(PWM_CHANNEL_WHITE, 0);
         ledcWrite(PWM_CHANNEL_YELLOW, 0);
+        // Reset aromatherapy jika timer tidak confirmed
+        if (digitalRead(AROMATHERAPY_PIN) == LOW)
+        {
+            digitalWrite(AROMATHERAPY_PIN, HIGH);
+            isAromatherapySpraying = false;
+            aromatherapyScheduleActive = false;
+        }
         return;
     }
 
@@ -252,61 +280,37 @@ void checkAndApplySchedules()
 
     bool isTimerActivePhase = (startTimeInMinutes > endTimeInMinutes) ? (currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes < endTimeInMinutes) : (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes);
 
+    // Light control (sama seperti sebelumnya)
     if (isTimerActivePhase)
     {
-        // 🌙 DALAM FASE TIMER - Lampu kuning dengan PWM 0-10
-        // ⭐ FIXED: Mapping ke 0-10 PWM (bukan 0-255)
         int yellowBrightness = map(currentSettings.light.intensity, 0, 100, 0, 10);
         ledcWrite(PWM_CHANNEL_YELLOW, yellowBrightness);
         ledcWrite(PWM_CHANNEL_WHITE, 0);
-        Serial.printf("🌙 Night Light (Yellow): %d%% brightness (%d/10 PWM)\n",
-                      currentSettings.light.intensity, yellowBrightness);
     }
     else
     {
-        // ☀️ LUAR FASE TIMER - Lampu putih full (PWM 10 untuk consistency)
-        ledcWrite(PWM_CHANNEL_WHITE, 10); // ⭐ FIXED: Full = 10 PWM
+        ledcWrite(PWM_CHANNEL_WHITE, 10);
         ledcWrite(PWM_CHANNEL_YELLOW, 0);
-        Serial.printf("☀️ Day Light (White): FULL brightness (10/10 PWM)\n");
     }
 
-    // ⭐ Update variable name untuk consistency
-    // Aromatherapy logic (menggunakan nama variable yang lebih jelas)
-    if (currentSettings.aromatherapy.on)
+    // ⭐ STORE: Previous state untuk detection
+    bool aromaStateBefore = currentSettings.aromatherapy.on;
+
+    // Aromatherapy logic (sama seperti sebelumnya)
+    checkAromatherapyLogic(currentTimeInMinutes, startTimeInMinutes);
+
+    // ⭐ DETECT: Aromatherapy auto-disabled dan notify frontend
+    if (aromaStateBefore && !currentSettings.aromatherapy.on)
     {
-        int firstHourEndInMinutes = (startTimeInMinutes + 60) % 1440;
-        bool inFirstHourOfTimer = (startTimeInMinutes + 60 > 1440) ? (currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes < firstHourEndInMinutes) : (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < firstHourEndInMinutes);
-
-        if (inFirstHourOfTimer)
-        {
-            if (!isAromatherapySpraying && (millis() - lastAromatherapyCheck >= 300000))
-            {
-                digitalWrite(AROMATHERAPY_PIN, HIGH);
-                isAromatherapySpraying = true;
-                aromatherapyOnTime = millis();
-                lastAromatherapyCheck = millis();
-                Serial.println("💨 Aromatherapy: Menyemprot...");
-            }
-            if (isAromatherapySpraying && (millis() - aromatherapyOnTime >= 5000))
-            {
-                digitalWrite(AROMATHERAPY_PIN, LOW);
-                isAromatherapySpraying = false;
-                Serial.println("💨 Aromatherapy: Berhenti.");
-            }
-        }
-        else
-        {
-            if (digitalRead(AROMATHERAPY_PIN) == HIGH)
-                digitalWrite(AROMATHERAPY_PIN, LOW);
-        }
-    }
-    else
-    {
-        if (digitalRead(AROMATHERAPY_PIN) == HIGH)
-            digitalWrite(AROMATHERAPY_PIN, LOW);
+        Serial.println("🔔 NOTIFICATION: Aromatherapy auto-disabled, notifying frontend...");
+        saveSettings();  // Save state change
+        notifyClients(); // Immediate update ke frontend
     }
 
-    // Music logic (juga menggunakan nama variable yang lebih jelas)
+    // ⭐ STORE: Previous music state
+    previousMusicState = currentSettings.music.on;
+
+    // Music logic (sama seperti sebelumnya)
     int musicEndTimeInMinutes = (startTimeInMinutes + 60) % 1440;
     bool inMusicTime = (startTimeInMinutes + 60 > 1440) ? (currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes < musicEndTimeInMinutes) : (currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < musicEndTimeInMinutes);
 
@@ -316,10 +320,13 @@ void checkAndApplySchedules()
         Serial.println("🎵 Relax Music: Waktu habis.");
         currentSettings.music.on = false;
         saveSettings();
-        notifyClients();
+
+        // ⭐ IMMEDIATE: Notify frontend about music auto-stop
+        Serial.println("🔔 NOTIFICATION: Music auto-stopped, notifying frontend...");
+        notifyClients(); // Immediate update ke frontend
     }
 
-    // Alarm logic (tidak berubah)
+    // Alarm logic (sama seperti sebelumnya)
     if (currentSettings.alarm.on && !isAlarmPlaying && !currentSettings.music.on)
     {
         if (rtc.hour() == currentSettings.timer.endHour && rtc.minute() == currentSettings.timer.endMinute)
@@ -342,6 +349,117 @@ void checkAndApplySchedules()
             myDFPlayer.play(currentSettings.music.track);
         }
     }
+}
+
+/**
+ * ⭐ FUNGSI AROMATHERAPY YANG DIPERBAIKI
+ * Requirement:
+ * 1. Aktif hanya jika toggle ON
+ * 2. Aktif hanya di jam pertama timer
+ * 3. Semprot 5 detik setiap 5 menit
+ * 4. Menggunakan relay (HIGH/LOW)
+ */
+void checkAromatherapyLogic(int currentTimeInMinutes, int startTimeInMinutes)
+{
+    // ===== CEK APAKAH AROMATHERAPY HARUS AKTIF =====
+    if (!currentSettings.aromatherapy.on)
+    {
+        if (digitalRead(AROMATHERAPY_PIN) == LOW)
+        {
+            digitalWrite(AROMATHERAPY_PIN, HIGH);
+            isAromatherapySpraying = false;
+            aromatherapyScheduleActive = false;
+            Serial.println("💨 Aromatherapy: Dimatikan (toggle OFF)");
+        }
+        return;
+    }
+
+    // ===== CEK APAKAH MASIH DALAM JAM PERTAMA =====
+    int timerElapsedMinutes;
+    if (currentTimeInMinutes >= startTimeInMinutes)
+    {
+        timerElapsedMinutes = currentTimeInMinutes - startTimeInMinutes;
+    }
+    else
+    {
+        timerElapsedMinutes = (1440 - startTimeInMinutes) + currentTimeInMinutes;
+    }
+
+    bool inFirstHour = (timerElapsedMinutes < 60);
+
+    if (!inFirstHour)
+    {
+        // ⭐ AUTO-DISABLE: Set state dan akan di-detect di checkAndApplySchedules()
+        if (digitalRead(AROMATHERAPY_PIN) == LOW)
+        {
+            digitalWrite(AROMATHERAPY_PIN, HIGH);
+            isAromatherapySpraying = false;
+            Serial.println("💨 Aromatherapy: Jam pertama selesai, dimatikan");
+        }
+        aromatherapyScheduleActive = false;
+
+        // ⭐ IMPORTANT: Auto-disable aromatherapy state
+        if (currentSettings.aromatherapy.on)
+        {
+            currentSettings.aromatherapy.on = false; // State change akan di-detect
+            Serial.println("💨 Aromatherapy: Auto-disabled setelah 1 jam");
+        }
+        return;
+    }
+
+    // Rest of aromatherapy logic sama seperti sebelumnya...
+    aromatherapyScheduleActive = true;
+    unsigned long currentMillis = millis();
+
+    if (isAromatherapySpraying)
+    {
+        if (currentMillis - aromatherapyOnTime >= 5000)
+        {
+            digitalWrite(AROMATHERAPY_PIN, HIGH);
+            isAromatherapySpraying = false;
+            lastAromatherapySprayStart = currentMillis;
+            Serial.println("💨 Aromatherapy: Semprotan selesai (5 detik)");
+        }
+        return;
+    }
+
+    unsigned long timeSinceLastSpray = currentMillis - lastAromatherapySprayStart;
+    bool timeToSpray = false;
+
+    if (lastAromatherapySprayStart == 0)
+    {
+        timeToSpray = true;
+        Serial.println("💨 Aromatherapy: Semprotan pertama kali");
+    }
+    else if (timeSinceLastSpray >= 300000)
+    {
+        timeToSpray = true;
+        Serial.printf("💨 Aromatherapy: 5 menit berlalu (%.1f menit), semprot lagi\n",
+                      timeSinceLastSpray / 60000.0);
+    }
+
+    if (timeToSpray)
+    {
+        digitalWrite(AROMATHERAPY_PIN, LOW);
+        isAromatherapySpraying = true;
+        aromatherapyOnTime = currentMillis;
+        Serial.printf("💨 Aromatherapy: Mulai semprot (menit ke-%d dari timer)\n", timerElapsedMinutes);
+    }
+}
+
+/**
+ * ⭐ FUNGSI UNTUK RESET AROMATHERAPY (dipanggil saat timer OFF)
+ */
+void resetAromatherapy()
+{
+    if (digitalRead(AROMATHERAPY_PIN) == LOW)
+    {
+        digitalWrite(AROMATHERAPY_PIN, HIGH);
+    }
+    isAromatherapySpraying = false;
+    aromatherapyScheduleActive = false;
+    lastAromatherapySprayStart = 0; // Reset counter
+    Serial.println("💨 Aromatherapy: Reset semua state");
 }
 
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
@@ -372,6 +490,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         if (!currentSettings.timer.on)
         {
             currentSettings.timer.confirmed = false;
+            resetAromatherapy();
         }
         changed = true;
     }
@@ -393,14 +512,14 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             Serial.printf("Light intensity: %d%%\n", currentSettings.light.intensity);
             changed = true;
         }
-        else if (command == "aromatherapy-toggle")
+        else if (command == "aroma-toggle")
         {
             currentSettings.aromatherapy.on = doc["value"];
             if (!currentSettings.aromatherapy.on)
             {
-                digitalWrite(AROMATHERAPY_PIN, LOW);
-                isAromatherapySpraying = false;
+                resetAromatherapy();
             }
+            Serial.printf("💨 Aromatherapy toggle: %s\n", currentSettings.aromatherapy.on ? "ON" : "OFF");
             changed = true;
         }
         else if (command == "alarm-toggle")
@@ -497,11 +616,12 @@ void setup()
     Serial.begin(115200);
     Wire.begin();
     pinMode(AROMATHERAPY_PIN, OUTPUT);
-    digitalWrite(AROMATHERAPY_PIN, LOW);
+    digitalWrite(AROMATHERAPY_PIN, HIGH);
     ledcSetup(PWM_CHANNEL_WHITE, PWM_FREQUENCY, PWM_RESOLUTION);
     ledcSetup(PWM_CHANNEL_YELLOW, PWM_FREQUENCY, PWM_RESOLUTION);
     ledcAttachPin(WHITE_LED_PIN, PWM_CHANNEL_WHITE);
     ledcAttachPin(YELLOW_LED_PIN, PWM_CHANNEL_YELLOW);
+
     if (!rtc.refresh())
     {
         Serial.println("KRITIS: RTC Gagal!");
@@ -512,14 +632,14 @@ void setup()
     myDFPlayerSerial.begin(9600, SERIAL_8N1, DFPLAYER_RX_PIN, DFPLAYER_TX_PIN);
     Serial.println("Menginisialisasi DFPlayer Mini...");
     if (!myDFPlayer.begin(myDFPlayerSerial, true, false))
-    { // Menggunakan begin(stream, isACK, doReset)
+    {
         Serial.println("KRITIS: DFPlayer Mini Gagal! Cek koneksi atau SD Card.");
     }
     else
     {
         Serial.println("OK: DFPlayer Mini terdeteksi.");
-        myDFPlayer.setTimeOut(500);        // Set serial timeout
-        myDFPlayer.EQ(DFPLAYER_EQ_NORMAL); // Set equalizer ke Normal
+        myDFPlayer.setTimeOut(500);
+        myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
     }
 
     loadSettings();
@@ -529,6 +649,7 @@ void setup()
         Serial.println("KRITIS: Gagal me-mount SPIFFS!");
         return;
     }
+
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -536,6 +657,7 @@ void setup()
         Serial.print(".");
     }
     Serial.println("\nTerhubung! IP: " + WiFi.localIP().toString());
+
     ws.onEvent(onEvent);
     server.addHandler(&ws);
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -544,14 +666,27 @@ void setup()
     server.begin();
 }
 
+// ⭐ TAMBAH: Periodic status broadcast di loop()
 void loop()
 {
     ws.cleanupClients();
+
+    // Check schedules every second
     if (millis() - lastTimeCheck >= 1000)
     {
         checkAndApplySchedules();
         lastTimeCheck = millis();
     }
+
+    // ⭐ NEW: Periodic status broadcast every 60 seconds
+    if (millis() - lastStatusBroadcast >= STATUS_BROADCAST_INTERVAL)
+    {
+        Serial.println("📡 Periodic status broadcast to frontend...");
+        notifyClients(); // Kirim status update berkala
+        lastStatusBroadcast = millis();
+    }
+
+    // Music next track logic
     if (currentSettings.music.on && myDFPlayer.available())
     {
         if (myDFPlayer.readType() == DFPlayerPlayFinished)
@@ -559,5 +694,6 @@ void loop()
             myDFPlayer.next();
         }
     }
+
     delay(10);
 }
