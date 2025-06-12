@@ -1,9 +1,24 @@
 /**
- * swell-script.js
+ * swell-script.js - Fixed Playlist Version
  * Versi fungsional penuh untuk homepage dan halaman detail.
  * Berkomunikasi langsung dengan ESP32 via WebSocket.
  * Mengelola daftar perangkat menggunakan localStorage browser.
+ * FIXED PLAYLIST: 6 lagu relax music fix + 1 alarm track fix
  */
+
+// =================================================================
+// FIXED PLAYLIST CONFIGURATION
+// =================================================================
+const FIXED_RELAX_PLAYLIST = [
+    { trackNumber: 1, title: "Relax Music - Lesgo", filename: "0001_Relax_lesgo.mp3" },
+    { trackNumber: 2, title: "Relax Music - Lesgo 2", filename: "0002_Relax_lesgo2.mp3" },
+    { trackNumber: 3, title: "Relax Music - Lesgo 3", filename: "0003_Relax_lesgo3.mp3" },
+    { trackNumber: 4, title: "Relax Music - Lesgo 4", filename: "0004_Relax_lesgo4.mp3" },
+    { trackNumber: 6, title: "Relax Music - Lesgo 5", filename: "0006_Relax_lesgo5.mp3" },
+    { trackNumber: 7, title: "Relax Music - Lesgo 6", filename: "0007_Relax_lesgo6.mp3" }
+];
+
+const ALARM_TRACK = { trackNumber: 5, title: "Alarm - Mari", filename: "0005_Alarm_mari.mp3" };
 
 // =================================================================
 // LOGIKA UTAMA & INISIALISASI
@@ -139,7 +154,6 @@ function initializeHomePage() {
 
 // =================================================================
 // FUNGSI UNTUK HALAMAN DETAIL (swell-device-detail.html)
-// (Kode dari jawaban sebelumnya, sudah kompatibel)
 // =================================================================
 
 let websocket;
@@ -158,6 +172,8 @@ function initializeDeviceDetailPage() {
     }
 
     console.log(`Initializing Detail Page for device at ${deviceIp}`);
+    console.log(`📻 Fixed playlist available: ${FIXED_RELAX_PLAYLIST.length} relax music + 1 alarm track`);
+
     const gateway = `ws://${deviceIp}/ws`;
 
     // --- Inisialisasi WebSocket ---
@@ -170,7 +186,8 @@ function initializeDeviceDetailPage() {
         console.log(`Connection to ${deviceIp} opened.`);
         updateConnectionStatus(true, deviceName);
         sendCommand('getStatus');
-        sendCommand('getPlaylist');
+        // ⭐ CHANGED: Tidak perlu getPlaylist karena sudah fixed
+        console.log('📻 Using fixed playlist, no need to fetch from device');
     }
 
     function onClose(event) {
@@ -186,9 +203,6 @@ function initializeDeviceDetailPage() {
     }
 
     function onMessage(event) {
-        // ... (fungsi onMessage, updateUIFromState, dll. sama seperti jawaban sebelumnya)
-        // ... (Kode ini sudah saya sertakan di jawaban sebelumnya, jadi tidak saya copy-paste ulang di sini untuk keringkasan)
-        // ... (Pastikan semua fungsi helper dari jawaban sebelumnya ada di sini)
         try {
             const data = JSON.parse(event.data);
             console.log(`Message from ${deviceIp}:`, data);
@@ -196,7 +210,8 @@ function initializeDeviceDetailPage() {
             if (data.type === 'statusUpdate') {
                 updateUIFromState(data.state);
             } else if (data.type === 'playlist') {
-                populateSongDropdown(data.playlist);
+                // ⭐ FIXED: Abaikan playlist dari device, gunakan fixed playlist
+                console.log('📻 Received playlist from device, but using fixed playlist instead');
             }
         } catch (e) {
             console.error("Failed to parse JSON from ESP32:", e);
@@ -242,7 +257,7 @@ function setupEventListeners() {
         });
     });
 
-    // Rest of event listeners (tidak berubah)...
+    // Intensity slider with 10% steps
     document.getElementById('intensity-slider').addEventListener('input', e => {
         let value = parseInt(e.currentTarget.value);
         value = Math.round(value / 10) * 10;
@@ -261,6 +276,7 @@ function setupEventListeners() {
         }
     });
 
+    // Light card click handler
     document.getElementById('light-card').addEventListener('click', function () {
         if (!this.classList.contains('feature-dependent')) {
             this.classList.toggle('expanded');
@@ -268,23 +284,30 @@ function setupEventListeners() {
         }
     });
 
+    // Volume slider
     document.getElementById('volume-slider').addEventListener('input', e => {
-        const value = parseInt(e.currentTarget.value);
+        let value = parseInt(e.currentTarget.value);
+        value = Math.round(value / 10) * 10;  // Round ke kelipatan 10
+        e.currentTarget.value = value;
         e.currentTarget.nextElementSibling.textContent = `${value}%`;
         sendCommand('music-volume', value);
     });
 
+    // ⭐ FIXED: Music track selection using fixed playlist track numbers
     document.getElementById('song-select').addEventListener('change', e => {
         const track = parseInt(e.currentTarget.value);
+        console.log(`🎵 Music track selected: ${track}`);
         sendCommand('music-track', track);
     });
 
+    // Timer confirm button
     document.getElementById('timer-confirm-button').addEventListener('click', () => {
         const startTime = document.getElementById('start-time').value;
         const endTime = document.getElementById('end-time').value;
         sendCommand('timer-confirm', { start: startTime, end: endTime });
     });
 
+    // Collapsible cards
     document.querySelectorAll('.collapsible').forEach(card => {
         card.addEventListener('click', (e) => {
             if (card.id === 'light-card') {
@@ -304,7 +327,6 @@ function setupEventListeners() {
     });
 }
 
-/** Memperbarui seluruh UI berdasarkan satu objek 'state' dari ESP32. */
 /** Memperbarui seluruh UI berdasarkan satu objek 'state' dari ESP32. */
 function updateUIFromState(state) {
     if (!state) return;
@@ -384,7 +406,7 @@ function updateUIFromState(state) {
         console.log('⏰ Alarm toggle updated:', state.alarm.on);
     }
 
-    // ⭐ FIXED: Update Music dengan logging
+    // ⭐ FIXED: Update Music dengan logging dan fixed playlist
     const musicToggle = document.getElementById('music-toggle');
     const musicStatus = document.getElementById('music-status');
     const songSelect = document.getElementById('song-select');
@@ -395,7 +417,19 @@ function updateUIFromState(state) {
         musicStatus.textContent = state.music.on ? 'ON' : 'OFF';
         console.log('🎵 Music toggle updated:', state.music.on);
 
-        if (songSelect) songSelect.value = state.music.track;
+        // ⭐ FIXED: Set dropdown value to match fixed playlist
+        if (songSelect && state.music.track) {
+            // Pastikan track yang dipilih ada di fixed playlist
+            const trackExists = FIXED_RELAX_PLAYLIST.some(track => track.trackNumber === state.music.track);
+            if (trackExists) {
+                songSelect.value = state.music.track;
+                console.log(`🎵 Music track set to: ${state.music.track}`);
+            } else {
+                console.warn(`⚠️ Invalid track from device: ${state.music.track}, using first track`);
+                songSelect.value = FIXED_RELAX_PLAYLIST[0].trackNumber;
+            }
+        }
+
         if (volumeSlider) {
             volumeSlider.value = state.music.volume;
             const volumeValue = volumeSlider.nextElementSibling;
@@ -403,7 +437,6 @@ function updateUIFromState(state) {
         }
     }
 }
-
 
 /** Mengunci atau membuka fitur-fitur yang bergantung pada Timer. */
 function enableDependentFeatures(isEnabled) {
@@ -454,18 +487,12 @@ function enableDependentFeatures(isEnabled) {
     }
 }
 
-
+/** ⭐ DEPRECATED: Tidak lagi digunakan karena playlist sudah fixed di HTML */
 function populateSongDropdown(playlist) {
-    const songSelect = document.getElementById('song-select');
-    songSelect.innerHTML = '';
-    playlist.forEach(song => {
-        const option = document.createElement('option');
-        option.value = song.trackNumber;
-        option.textContent = song.title;
-        songSelect.appendChild(option);
-    });
+    console.log('📻 populateSongDropdown called, but using fixed playlist instead');
+    // Tidak melakukan apa-apa karena dropdown sudah fixed di HTML
+    // Fixed playlist sudah terdefinisi langsung di HTML
 }
-
 
 function updateConnectionStatus(isConnected) {
     const statusEl = document.querySelector('.device-status');
@@ -475,7 +502,6 @@ function updateConnectionStatus(isConnected) {
     statusEl.textContent = isConnected ? 'Connected' : 'Disconnected. Reconnecting...';
     imgEl.src = isConnected ? 'media/ActiveDevice.png' : 'media/NotActiveDevice.png';
 }
-
 
 /** Menampilkan pesan sementara di bagian bawah layar. */
 function showTemporaryMessage(message) {
@@ -493,7 +519,6 @@ function showTemporaryMessage(message) {
         setTimeout(() => messageDiv.remove(), 500);
     }, 3000);
 }
-
 
 /** Membuat efek bintang di latar belakang. */
 function createStars() {

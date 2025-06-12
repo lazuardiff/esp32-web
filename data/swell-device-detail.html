@@ -74,7 +74,7 @@
             <!-- Night Lights Feature Card -->
             <div class="feature-card collapsible feature-dependent" id="light-card">
                 <div class="feature-left">
-                    <div class="feature-icon">🌙</div> <!-- Changed icon to moon -->
+                    <div class="feature-icon">🌙</div>
                     <div><span class="bold">Night Lights</span><br>
                         <small style="color: #666;">Controls yellow light intensity during timer phase</small>
                     </div>
@@ -90,13 +90,11 @@
                 <div class="control-group">
                     <label for="intensity-slider" class="control-label">Yellow Light Intensity:</label>
                     <div class="volume-control-wrapper">
-                        <!-- ⭐ UPDATED: Tambah step="10" untuk increment 10% -->
                         <input type="range" id="intensity-slider" min="0" max="100" value="50" step="10"
                             class="volume-slider">
                         <span class="intensity-value">50%</span>
                     </div>
                 </div>
-                <!-- ⭐ TAMBAH: Visual indicator untuk step values -->
                 <div class="slider-steps">
                     <span class="step-label">0%</span>
                     <span class="step-label">20%</span>
@@ -106,7 +104,8 @@
                     <span class="step-label">100%</span>
                 </div>
             </div>
-            <!-- Aromatherapy Feature Card - Initially with shadow overlay -->
+            
+            <!-- Aromatherapy Feature Card -->
             <div class="feature-card feature-dependent">
                 <div class="feature-left">
                     <div class="feature-icon">💨</div>
@@ -118,11 +117,13 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Alarm Feature Card - Initially with shadow overlay -->
+            <!-- Alarm Feature Card - No dropdown, fixed track -->
             <div class="feature-card feature-dependent">
                 <div class="feature-left">
                     <div class="feature-icon">🔔</div>
-                    <div><span class="bold">Alarm</span>: <span id="alarm-status">OFF</span></div>
+                    <div><span class="bold">Alarm</span>: <span id="alarm-status">OFF</span><br>
+                        <small style="color: #666;">Fixed alarm sound (Alarm - Mari)</small>
+                    </div>
                 </div>
                 <div class="toggle dependent-disabled" id="alarm-toggle">
                     <div class="toggle-slider"></div>
@@ -130,7 +131,7 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Relax Music Feature Card - Initially with shadow overlay -->
+            <!-- Relax Music Feature Card - Fixed playlist dropdown -->
             <div class="feature-card collapsible feature-dependent" id="music-card">
                 <div class="feature-left">
                     <div class="feature-icon">🎵</div>
@@ -142,24 +143,37 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Expanded music controls (initially hidden) -->
+            <!-- Expanded music controls with fixed playlist -->
             <div class="expanded-controls" id="music-controls">
                 <div class="control-group">
-                    <label for="song-select" class="control-label">Select Song:</label>
+                    <label for="song-select" class="control-label">Select Relax Music:</label>
                     <select id="song-select" class="song-dropdown">
-                        <option value="rainforest">Rainforest Sounds</option>
-                        <option value="ocean">Ocean Waves</option>
-                        <option value="night">Night Ambience</option>
-                        <option value="meditation">Meditation Music</option>
+                        <!-- ⭐ FIXED PLAYLIST: Updated with actual file names -->
+                        <option value="1">Relax Music - Lesgo</option>
+                        <option value="2">Relax Music - Lesgo 2</option>
+                        <option value="3">Relax Music - Lesgo 3</option>
+                        <option value="4">Relax Music - Lesgo 4</option>
+                        <option value="6">Relax Music - Lesgo 5</option>
+                        <option value="7">Relax Music - Lesgo 6</option>
                     </select>
                 </div>
 
                 <div class="control-group">
                     <label for="volume-slider" class="control-label">Volume:</label>
                     <div class="volume-control-wrapper">
-                        <input type="range" id="volume-slider" min="0" max="100" value="50" class="volume-slider">
+                        <!-- ⭐ UPDATED: Tambah step="10" untuk increment 10% -->
+                        <input type="range" id="volume-slider" min="0" max="100" value="50" step="10" class="volume-slider">
                         <span class="volume-value">50%</span>
                     </div>
+                </div>
+                <!-- ⭐ TAMBAH: Visual indicator untuk volume step values -->
+                <div class="slider-steps">
+                    <span class="step-label">0%</span>
+                    <span class="step-label">20%</span>
+                    <span class="step-label">40%</span>
+                    <span class="step-label">60%</span>
+                    <span class="step-label">80%</span>
+                    <span class="step-label">100%</span>
                 </div>
             </div>
         </div>
@@ -340,13 +354,16 @@
                     });
                 }
 
-                // Setup volume slider value display
+                // Setup volume slider value display with 10% steps
                 const volumeSlider = document.getElementById('volume-slider');
                 const volumeValue = document.querySelector('.volume-value');
 
                 if (volumeSlider && volumeValue) {
                     volumeSlider.addEventListener('input', function () {
-                        volumeValue.textContent = `${this.value}%`;
+                        let value = parseInt(this.value);
+                        value = Math.round(value / 10) * 10;
+                        this.value = value;
+                        volumeValue.textContent = `${value}%`;
                     });
                 }
 
@@ -364,7 +381,7 @@
             // 4. INVOKE MOCK STATUS CHECK TO INITIALIZE UI
             setTimeout(function () {
                 // Force reconnect button to always trigger a UI refresh
-                const reconnectBtn = documentz.querySelector('.reconnect-btn');
+                const reconnectBtn = document.querySelector('.reconnect-btn');
                 if (reconnectBtn) {
                     reconnectBtn.addEventListener('click', function () {
                         location.reload();
