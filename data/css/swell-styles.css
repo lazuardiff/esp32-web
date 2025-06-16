@@ -290,7 +290,8 @@ select:disabled {
 
 .expanded-controls.expanded {
     padding: 15px;
-    max-height: 350px;
+    max-height: 450px;
+    /* ⭐ INCREASED from 350px to accommodate new info notices */
     opacity: 1;
 }
 
@@ -631,6 +632,29 @@ select:disabled {
     font-weight: bold;
 }
 
+/* ⭐ NEW: Music Info Notice Styling */
+.music-info-notice {
+    background-color: rgba(76, 217, 100, 0.1);
+    /* Green tint for music */
+    border-left: 3px solid #4cd964;
+    /* Green border */
+    padding: 8px 12px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.music-info-notice p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: #333;
+}
+
+.music-info-notice strong {
+    font-weight: bold;
+    color: #2d7a3d;
+    /* Darker green for emphasis */
+}
+
 /* Light Card Styling */
 #light-card:not(.feature-dependent) {
     border-left: 4px solid #f7a325;
@@ -639,6 +663,40 @@ select:disabled {
 
 #light-card:not(.feature-dependent) .feature-icon {
     color: #f7a325;
+}
+
+/* ⭐ NEW: Music Card Special Styling for NO REPEAT mode */
+#music-card:not(.feature-dependent) {
+    border-left: 4px solid #4cd964;
+    /* Green border untuk musik */
+}
+
+#music-card:not(.feature-dependent) .feature-icon {
+    color: #4cd964;
+    /* Green icon untuk musik */
+}
+
+/* ⭐ NEW: Special styling untuk status text yang menunjukkan mode */
+#music-status {
+    font-weight: bold;
+}
+
+#music-status:after {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #4cd964;
+    border-radius: 50%;
+    margin-left: 5px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Show green indicator when music is ON */
+.toggle.active+* #music-status:after,
+#music-card .toggle.active~* #music-status:after {
+    opacity: 1;
 }
 
 /* Slider Steps */
@@ -697,6 +755,61 @@ input[type="range"]::-moz-range-track {
     border-radius: 2px;
 }
 
+/* ⭐ NEW: Enhanced dropdown styling untuk updated playlist */
+.song-dropdown {
+    width: 100%;
+    padding: 10px 12px;
+    /* Increased padding */
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    /* Thicker border */
+    background-color: white;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    /* Medium weight */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.song-dropdown:focus {
+    outline: none;
+    border-color: #4cd964;
+    /* Green focus border */
+    box-shadow: 0 0 0 3px rgba(76, 217, 100, 0.1);
+    /* Green glow */
+}
+
+.song-dropdown:hover {
+    border-color: #4cd964;
+    /* Green hover border */
+}
+
+/* ⭐ NEW: Info boxes untuk different features dengan color coding */
+.timer-notification {
+    background-color: rgba(247, 163, 37, 0.1);
+    /* Orange */
+    border-left: 3px solid #f7a325;
+}
+
+.light-info-notice {
+    background-color: rgba(247, 163, 37, 0.1);
+    /* Orange */
+    border-left: 3px solid #f7a325;
+}
+
+.music-info-notice {
+    background-color: rgba(76, 217, 100, 0.1);
+    /* Green */
+    border-left: 3px solid #4cd964;
+}
+
+/* ⭐ NEW: Aromatherapy info (if we add it later) */
+.aroma-info-notice {
+    background-color: rgba(138, 43, 226, 0.1);
+    /* Purple */
+    border-left: 3px solid #8a2be2;
+}
+
 /* Media Queries */
 @media screen and (max-width: 600px) {
     .container {
@@ -726,7 +839,8 @@ input[type="range"]::-moz-range-track {
     }
 
     .expanded-controls.expanded {
-        max-height: 450px;
+        max-height: 550px;
+        /* ⭐ INCREASED for mobile to accommodate new info notices */
         padding: 15px 10px;
     }
 
@@ -754,6 +868,19 @@ input[type="range"]::-moz-range-track {
         font-size: 28px;
         width: 40px;
         height: 40px;
+    }
+
+    /* ⭐ NEW: Mobile-specific adjustments untuk info notices */
+    .music-info-notice,
+    .light-info-notice,
+    .timer-notification {
+        padding: 6px 10px;
+        margin-bottom: 12px;
+    }
+
+    .music-info-notice p,
+    .light-info-notice p {
+        font-size: 12px;
     }
 }
 

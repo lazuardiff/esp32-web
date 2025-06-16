@@ -20,7 +20,7 @@
 
         <div class="device-card">
             <div class="device-icon">
-                <img src="media/ActiveDevice.png" alt="Lamp" class="device-img">
+                <img src="media/logo.png" alt="Lamp" class="device-img">
             </div>
             <div class="device-info">
                 <div class="device-name">This device is Off</div>
@@ -104,12 +104,14 @@
                     <span class="step-label">100%</span>
                 </div>
             </div>
-            
+
             <!-- Aromatherapy Feature Card -->
             <div class="feature-card feature-dependent">
                 <div class="feature-left">
                     <div class="feature-icon">💨</div>
-                    <div><span class="bold">Aromatherapy</span>: <span id="aroma-status">OFF</span></div>
+                    <div><span class="bold">Aromatherapy</span>: <span id="aroma-status">OFF</span><br>
+                        <small style="color: #666;">5s ON / 5min OFF pattern, auto-stop after 1 hour</small>
+                    </div>
                 </div>
                 <div class="toggle dependent-disabled" id="aroma-toggle">
                     <div class="toggle-slider"></div>
@@ -122,7 +124,7 @@
                 <div class="feature-left">
                     <div class="feature-icon">🔔</div>
                     <div><span class="bold">Alarm</span>: <span id="alarm-status">OFF</span><br>
-                        <small style="color: #666;">Fixed alarm sound (Alarm - Mari)</small>
+                        <small style="color: #666;">Fixed alarm sound - 5 minutes duration</small>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="alarm-toggle">
@@ -131,11 +133,13 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Relax Music Feature Card - Fixed playlist dropdown -->
+            <!-- ⭐ UPDATED: Relax Music Feature Card dengan NO REPEAT indicators -->
             <div class="feature-card collapsible feature-dependent" id="music-card">
                 <div class="feature-left">
                     <div class="feature-icon">🎵</div>
-                    <div><span class="bold">Relax Music</span>: <span id="music-status">OFF</span></div>
+                    <div><span class="bold">Relax Music</span>: <span id="music-status">OFF</span><br>
+                        <small style="color: #666;">Nature sounds - NO REPEAT, max 1 hour</small>
+                    </div>
                 </div>
                 <div class="toggle dependent-disabled" id="music-toggle">
                     <div class="toggle-slider"></div>
@@ -143,30 +147,38 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Expanded music controls with fixed playlist -->
+            <!-- ⭐ UPDATED: Expanded music controls dengan updated playlist -->
             <div class="expanded-controls" id="music-controls">
+                <!-- ⭐ NEW: Music mode explanation -->
+                <div class="music-info-notice">
+                    <p><strong>🎵 NO REPEAT MODE:</strong> Each track plays once without looping</p>
+                    <p><strong>⏰ 1-Hour Limit:</strong> Music auto-stops after 60 minutes maximum</p>
+                    <p><strong>🎶 Nature Sounds:</strong> High-quality ambient tracks for better sleep</p>
+                </div>
+
                 <div class="control-group">
-                    <label for="song-select" class="control-label">Select Relax Music:</label>
+                    <label for="song-select" class="control-label">Select Nature Sound:</label>
                     <select id="song-select" class="song-dropdown">
-                        <!-- ⭐ FIXED PLAYLIST: Updated with actual file names -->
-                        <option value="1">Relax Music - Lesgo</option>
-                        <option value="2">Relax Music - Lesgo 2</option>
-                        <option value="3">Relax Music - Lesgo 3</option>
-                        <option value="4">Relax Music - Lesgo 4</option>
-                        <option value="6">Relax Music - Lesgo 5</option>
-                        <option value="7">Relax Music - Lesgo 6</option>
+                        <!-- ⭐ UPDATED: New playlist options matching main.cpp -->
+                        <option value="1">AYAT KURSI</option>
+                        <option value="2">FAN</option>
+                        <option value="3">FROG</option>
+                        <option value="4">OCEAN WAVES</option>
+                        <option value="6">RAINDROP</option>
+                        <option value="7">RIVER</option>
+                        <option value="8">VACUUM CLEANER</option>
                     </select>
                 </div>
 
                 <div class="control-group">
                     <label for="volume-slider" class="control-label">Volume:</label>
                     <div class="volume-control-wrapper">
-                        <!-- ⭐ UPDATED: Tambah step="10" untuk increment 10% -->
-                        <input type="range" id="volume-slider" min="0" max="100" value="50" step="10" class="volume-slider">
+                        <input type="range" id="volume-slider" min="0" max="100" value="50" step="10"
+                            class="volume-slider">
                         <span class="volume-value">50%</span>
                     </div>
                 </div>
-                <!-- ⭐ TAMBAH: Visual indicator untuk volume step values -->
+                <!-- Volume step indicators -->
                 <div class="slider-steps">
                     <span class="step-label">0%</span>
                     <span class="step-label">20%</span>
@@ -218,7 +230,7 @@
                     }
 
                     if (deviceImage) {
-                        deviceImage.src = "media/ActiveDevice.png";
+                        deviceImage.src = "media/logo.png";
                     }
 
                     // Add connected class to device card
@@ -322,7 +334,8 @@
                             if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
                         } else if (id === 'music-toggle') {
                             const statusText = document.getElementById('music-status');
-                            if (statusText) statusText.textContent = isActive ? 'ON' : 'OFF';
+                            // ⭐ UPDATED: Show 1h max indicator when active
+                            if (statusText) statusText.textContent = isActive ? 'ON (1h max)' : 'OFF';
 
                             // Show/hide controls
                             const controls = document.getElementById('music-controls');

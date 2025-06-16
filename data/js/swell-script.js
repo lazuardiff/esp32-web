@@ -1,24 +1,25 @@
 /**
- * swell-script.js - Fixed Playlist Version
+ * swell-script.js - Updated for NO REPEAT 1-Hour Music System
  * Versi fungsional penuh untuk homepage dan halaman detail.
  * Berkomunikasi langsung dengan ESP32 via WebSocket.
  * Mengelola daftar perangkat menggunakan localStorage browser.
- * FIXED PLAYLIST: 6 lagu relax music fix + 1 alarm track fix
+ * UPDATED PLAYLIST: Nature sounds dengan durasi maksimal 1 jam tanpa repeat
  */
 
 // =================================================================
-// FIXED PLAYLIST CONFIGURATION
+// UPDATED PLAYLIST CONFIGURATION - MATCH WITH MAIN.CPP
 // =================================================================
 const FIXED_RELAX_PLAYLIST = [
-    { trackNumber: 1, title: "Relax Music - Lesgo", filename: "0001_Relax_lesgo.mp3" },
-    { trackNumber: 2, title: "Relax Music - Lesgo 2", filename: "0002_Relax_lesgo2.mp3" },
-    { trackNumber: 3, title: "Relax Music - Lesgo 3", filename: "0003_Relax_lesgo3.mp3" },
-    { trackNumber: 4, title: "Relax Music - Lesgo 4", filename: "0004_Relax_lesgo4.mp3" },
-    { trackNumber: 6, title: "Relax Music - Lesgo 5", filename: "0006_Relax_lesgo5.mp3" },
-    { trackNumber: 7, title: "Relax Music - Lesgo 6", filename: "0007_Relax_lesgo6.mp3" }
+    { trackNumber: 1, title: "AYAT KURSI", filename: "0001_Relax_AYAT_KURSI.mp3" },
+    { trackNumber: 2, title: "FAN", filename: "0002_Relax_FAN.mp3" },
+    { trackNumber: 3, title: "FROG", filename: "0003_Relax_FROG.mp3" },
+    { trackNumber: 4, title: "OCEAN WAVES", filename: "0004_Relax_OCEAN_WAVES.mp3" },
+    { trackNumber: 6, title: "RAINDROP", filename: "0006_Relax_RAINDROP.mp3" },
+    { trackNumber: 7, title: "RIVER", filename: "0007_Relax_RIVER.mp3" },
+    { trackNumber: 8, title: "VACUUM CLEANER", filename: "0008_Relax_VACUM_CLEANER.mp3" }
 ];
 
-const ALARM_TRACK = { trackNumber: 5, title: "Alarm - Mari", filename: "0005_Alarm_mari.mp3" };
+const ALARM_TRACK = { trackNumber: 5, title: "ALARM SOUND", filename: "0005_Alarm_sound_alarm.mp3" };
 
 // =================================================================
 // LOGIKA UTAMA & INISIALISASI
@@ -34,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeDeviceDetailPage();
     }
 });
-
 
 // =================================================================
 // FUNGSI UNTUK HALAMAN UTAMA (swell-homepage.html)
@@ -128,7 +128,7 @@ function initializeHomePage() {
                 <a href="swell-device-detail.html?ip=${encodeURIComponent(device.ip)}&name=${encodeURIComponent(device.name)}" class="device-link">
                     <div class="device-card" data-ip="${device.ip}">
                         <div class="device-icon">
-                            <img src="media/ActiveDevice.png" alt="Device" class="device-img">
+                            <img src="media/logo.png" alt="Device" class="device-img">
                         </div>
                         <div class="device-info">
                             <div class="device-name">${device.name}</div>
@@ -151,7 +151,6 @@ function initializeHomePage() {
     refreshDeviceList();
 }
 
-
 // =================================================================
 // FUNGSI UNTUK HALAMAN DETAIL (swell-device-detail.html)
 // =================================================================
@@ -172,7 +171,7 @@ function initializeDeviceDetailPage() {
     }
 
     console.log(`Initializing Detail Page for device at ${deviceIp}`);
-    console.log(`📻 Fixed playlist available: ${FIXED_RELAX_PLAYLIST.length} relax music + 1 alarm track`);
+    console.log(`📻 Updated fixed playlist available: ${FIXED_RELAX_PLAYLIST.length} nature sounds (NO REPEAT, MAX 1 HOUR)`);
 
     const gateway = `ws://${deviceIp}/ws`;
 
@@ -186,8 +185,9 @@ function initializeDeviceDetailPage() {
         console.log(`Connection to ${deviceIp} opened.`);
         updateConnectionStatus(true, deviceName);
         sendCommand('getStatus');
-        // ⭐ CHANGED: Tidak perlu getPlaylist karena sudah fixed
-        console.log('📻 Using fixed playlist, no need to fetch from device');
+
+        // ⭐ UPDATE: Populate dropdown dengan playlist baru
+        populateSongDropdownWithFixedPlaylist();
     }
 
     function onClose(event) {
@@ -210,8 +210,9 @@ function initializeDeviceDetailPage() {
             if (data.type === 'statusUpdate') {
                 updateUIFromState(data.state);
             } else if (data.type === 'playlist') {
-                // ⭐ FIXED: Abaikan playlist dari device, gunakan fixed playlist
+                // ⭐ UPDATED: Gunakan fixed playlist, abaikan playlist dari device
                 console.log('📻 Received playlist from device, but using fixed playlist instead');
+                populateSongDropdownWithFixedPlaylist();
             }
         } catch (e) {
             console.error("Failed to parse JSON from ESP32:", e);
@@ -220,6 +221,27 @@ function initializeDeviceDetailPage() {
 
     // Pasang semua event listener untuk elemen UI
     setupEventListeners();
+}
+
+/** 
+ * ⭐ NEW FUNCTION: Populate dropdown dengan updated fixed playlist
+ */
+function populateSongDropdownWithFixedPlaylist() {
+    const songSelect = document.getElementById('song-select');
+    if (!songSelect) return;
+
+    // Clear existing options
+    songSelect.innerHTML = '';
+
+    // Add updated tracks dari FIXED_RELAX_PLAYLIST
+    FIXED_RELAX_PLAYLIST.forEach(track => {
+        const option = document.createElement('option');
+        option.value = track.trackNumber;
+        option.textContent = track.title;
+        songSelect.appendChild(option);
+    });
+
+    console.log(`📻 Dropdown populated with ${FIXED_RELAX_PLAYLIST.length} updated tracks`);
 }
 
 /** Mengirim perintah dalam format JSON ke ESP32. */
@@ -293,10 +315,10 @@ function setupEventListeners() {
         sendCommand('music-volume', value);
     });
 
-    // ⭐ FIXED: Music track selection using fixed playlist track numbers
+    // ⭐ UPDATED: Music track selection menggunakan fixed playlist track numbers
     document.getElementById('song-select').addEventListener('change', e => {
         const track = parseInt(e.currentTarget.value);
-        console.log(`🎵 Music track selected: ${track}`);
+        console.log(`🎵 Music track selected: ${track} (NO REPEAT MODE)`);
         sendCommand('music-track', track);
     });
 
@@ -388,7 +410,7 @@ function updateUIFromState(state) {
         lightControls.classList.remove('expanded');
     }
 
-    // ⭐ FIXED: Update Aromatherapy dengan logging
+    // ⭐ UPDATED: Update Aromatherapy dengan logging
     const aromaToggle = document.getElementById('aroma-toggle');
     const aromaStatus = document.getElementById('aroma-status');
     if (aromaToggle && aromaStatus && state.aromatherapy) {
@@ -397,7 +419,7 @@ function updateUIFromState(state) {
         console.log('🌿 Aromatherapy toggle updated:', state.aromatherapy.on);
     }
 
-    // ⭐ FIXED: Update Alarm dengan logging
+    // ⭐ UPDATED: Update Alarm dengan logging
     const alarmToggle = document.getElementById('alarm-toggle');
     const alarmStatus = document.getElementById('alarm-status');
     if (alarmToggle && alarmStatus && state.alarm) {
@@ -406,7 +428,7 @@ function updateUIFromState(state) {
         console.log('⏰ Alarm toggle updated:', state.alarm.on);
     }
 
-    // ⭐ FIXED: Update Music dengan logging dan fixed playlist
+    // ⭐ UPDATED: Update Music dengan logging dan updated playlist
     const musicToggle = document.getElementById('music-toggle');
     const musicStatus = document.getElementById('music-status');
     const songSelect = document.getElementById('song-select');
@@ -414,16 +436,16 @@ function updateUIFromState(state) {
 
     if (musicToggle && musicStatus && state.music) {
         musicToggle.classList.toggle('active', state.music.on);
-        musicStatus.textContent = state.music.on ? 'ON' : 'OFF';
-        console.log('🎵 Music toggle updated:', state.music.on);
+        musicStatus.textContent = state.music.on ? 'ON (1h max)' : 'OFF'; // ⭐ UPDATED: Show 1h max indicator
+        console.log('🎵 Music toggle updated:', state.music.on, '(NO REPEAT MODE)');
 
-        // ⭐ FIXED: Set dropdown value to match fixed playlist
+        // ⭐ UPDATED: Set dropdown value dari updated playlist
         if (songSelect && state.music.track) {
-            // Pastikan track yang dipilih ada di fixed playlist
+            // Pastikan track yang dipilih ada di updated fixed playlist
             const trackExists = FIXED_RELAX_PLAYLIST.some(track => track.trackNumber === state.music.track);
             if (trackExists) {
                 songSelect.value = state.music.track;
-                console.log(`🎵 Music track set to: ${state.music.track}`);
+                console.log(`🎵 Music track set to: ${state.music.track} (NO REPEAT)`);
             } else {
                 console.warn(`⚠️ Invalid track from device: ${state.music.track}, using first track`);
                 songSelect.value = FIXED_RELAX_PLAYLIST[0].trackNumber;
@@ -487,20 +509,13 @@ function enableDependentFeatures(isEnabled) {
     }
 }
 
-/** ⭐ DEPRECATED: Tidak lagi digunakan karena playlist sudah fixed di HTML */
-function populateSongDropdown(playlist) {
-    console.log('📻 populateSongDropdown called, but using fixed playlist instead');
-    // Tidak melakukan apa-apa karena dropdown sudah fixed di HTML
-    // Fixed playlist sudah terdefinisi langsung di HTML
-}
-
 function updateConnectionStatus(isConnected) {
     const statusEl = document.querySelector('.device-status');
     const imgEl = document.querySelector('.device-img');
     if (!statusEl || !imgEl) return;
 
     statusEl.textContent = isConnected ? 'Connected' : 'Disconnected. Reconnecting...';
-    imgEl.src = isConnected ? 'media/ActiveDevice.png' : 'media/NotActiveDevice.png';
+    imgEl.src = 'media/logo.png';
 }
 
 /** Menampilkan pesan sementara di bagian bawah layar. */
