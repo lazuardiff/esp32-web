@@ -1,7 +1,7 @@
 /**
  * @file main.cpp
- * @brief Swell Smart Lamp - Complete Smart Lamp IoT System
- * @version 2.0
+ * @brief Swell Smart Lamp - Complete Smart Lamp IoT System with RTC Calibration
+ * @version 2.1
  * @date 2025
  * @author Swell Team
  *
@@ -16,6 +16,17 @@
  * - LED strips (putih & kuning) untuk pencahayaan adaptif
  * - Aromatherapy diffuser untuk relaksasi
  * - WebSocket-based web interface untuk kontrol
+ * - RTC Calibration dengan waktu browser
+ *
+ * =================================================================
+ * NEW FEATURES
+ * =================================================================
+ *
+ * 7. RTC CALIBRATION SYSTEM
+ *    - Real-time RTC time display on frontend
+ *    - Browser-based RTC calibration
+ *    - Automatic time synchronization
+ *    - Time comparison display
  *
  * =================================================================
  * SYSTEM FEATURES
@@ -52,6 +63,12 @@
  *    - Device discovery and connection
  *    - Live status updates and control
  *
+ * 7. RTC CALIBRATION
+ *    - getRTC command: Send current RTC time to frontend
+ *    - rtc-calibrate command: Calibrate RTC with browser time
+ *    - Real-time time display on web interface
+ *    - Automatic periodic time updates
+ *
  * =================================================================
  * HARDWARE CONFIGURATION
  * =================================================================
@@ -83,6 +100,23 @@
  * - 1-hour maximum duration regardless of track length
  * - Auto-disable when timer window expires
  * - Real-time duration monitoring and logging
+ *
+ * =================================================================
+ * RTC CALIBRATION LOGIC
+ * =================================================================
+ *
+ * Commands:
+ * - getRTC: Returns current RTC time in JSON format
+ * - rtc-calibrate: Sets RTC time from browser timestamp
+ *
+ * Time Format:
+ * - Year: Full year (2025)
+ * - Month: 1-12 (1=January)
+ * - Day: 1-31
+ * - DayOfWeek: 1-7 (1=Sunday)
+ * - Hour: 0-23
+ * - Minute: 0-59
+ * - Second: 0-59
  *
  * =================================================================
  * TIMING LOGIC
@@ -206,6 +240,10 @@ unsigned long lastTimeCheck = 0;                       // Last schedule check ti
 unsigned long lastStatusBroadcast = 0;                 // Last status broadcast time
 const unsigned long STATUS_BROADCAST_INTERVAL = 60000; // Broadcast setiap 60 detik
 
+// RTC timing variables
+unsigned long lastRTCBroadcast = 0;                 // Last RTC time broadcast
+const unsigned long RTC_BROADCAST_INTERVAL = 30000; // Broadcast RTC time setiap 30 detik
+
 // Alarm timing variables
 unsigned long alarmStopTime = 0; // Waktu alarm harus berhenti
 bool isAlarmPlaying = false;     // Status alarm sedang berbunyi
@@ -269,6 +307,83 @@ struct Settings
 };
 
 Settings currentSettings; // Global settings instance
+
+// =================================================================
+// ⭐ NEW: CSS SERVING HELPER FUNCTION
+// =================================================================
+
+/**
+ * @brief Get proper MIME type for file extensions
+ * @param filename Name of the file
+ * @return String MIME type
+ */
+String getContentType(String filename)
+{
+    if (filename.endsWith(".html"))
+        return "text/html";
+    else if (filename.endsWith(".css"))
+        return "text/css";
+    else if (filename.endsWith(".js"))
+        return "application/javascript";
+    else if (filename.endsWith(".png"))
+        return "image/png";
+    else if (filename.endsWith(".jpg"))
+        return "image/jpeg";
+    else if (filename.endsWith(".ico"))
+        return "image/x-icon";
+    else if (filename.endsWith(".gif"))
+        return "image/gif";
+    return "text/plain";
+}
+
+/**
+ * @brief Serve file from SPIFFS with proper error handling
+ * @param request HTTP request object
+ * @param filename Requested filename
+ */
+void serveFileFromSPIFFS(AsyncWebServerRequest *request, String filename)
+{
+    String contentType = getContentType(filename);
+
+    // Try to serve the file directly
+    if (SPIFFS.exists(filename))
+    {
+        Serial.printf("✅ Serving file: %s (Type: %s)\n", filename.c_str(), contentType.c_str());
+        request->send(SPIFFS, filename, contentType);
+        return;
+    }
+
+    // If file not found, try alternative paths
+    String altPath = "";
+
+    // Handle CSS folder reference (css/swell-styles.css -> swell-styles.css)
+    if (filename.startsWith("/css/"))
+    {
+        altPath = "/" + filename.substring(5); // Remove "/css/" prefix
+        if (SPIFFS.exists(altPath))
+        {
+            Serial.printf("✅ Serving CSS fallback: %s -> %s\n", filename.c_str(), altPath.c_str());
+            request->send(SPIFFS, altPath, contentType);
+            return;
+        }
+    }
+
+    // Handle media folder reference (media/logo.png -> logo.png)
+    if (filename.startsWith("/media/"))
+    {
+        altPath = "/" + filename.substring(7); // Remove "/media/" prefix
+        if (SPIFFS.exists(altPath))
+        {
+            Serial.printf("✅ Serving media fallback: %s -> %s\n", filename.c_str(), altPath.c_str());
+            request->send(SPIFFS, altPath, contentType);
+            return;
+        }
+    }
+
+    // File not found anywhere
+    Serial.printf("❌ File not found: %s\n", filename.c_str());
+    request->send(404, "text/plain", "File Not Found");
+}
 
 // =================================================================
 // COMPILE-TIME FUNCTIONS UNTUK RTC SETUP
@@ -368,6 +483,11 @@ bool isInMusicTimeWindow(int currentTimeInMinutes, int startTimeInMinutes); // C
 // Aromatherapy system
 void checkAromatherapyLogic(int currentTimeInMinutes, int startTimeInMinutes); // Aromatherapy scheduler
 void resetAromatherapy();                                                      // Reset aromatherapy state
+
+// RTC system
+void sendRTCTime();                            // Send current RTC time to frontend
+bool calibrateRTC(JsonObject calibrationData); // Calibrate RTC with browser time
+void broadcastRTCTime();                       // Broadcast RTC time periodically
 
 // WebSocket communication
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);                                                           // Handle incoming WebSocket messages
@@ -511,6 +631,110 @@ bool initializeDFPlayer()
     Serial.println("❌ KRITIS: DFPlayer Mini gagal diinisialisasi setelah 3 percobaan!");
     dfPlayerInitialized = false;
     return false;
+}
+
+// =================================================================
+// RTC SYSTEM FUNCTIONS
+// =================================================================
+
+/**
+ * @brief Send current RTC time to frontend via WebSocket
+ * @note Mengirim waktu RTC dalam format JSON untuk display di frontend
+ */
+void sendRTCTime()
+{
+    rtc.refresh(); // Refresh RTC data
+
+    // Create JSON response with current RTC time
+    JsonDocument rtcDoc;
+    rtcDoc["type"] = "rtcTime";
+    rtcDoc["rtc"]["year"] = rtc.year() + 2000; // RTC library returns year as offset from 2000
+    rtcDoc["rtc"]["month"] = rtc.month();
+    rtcDoc["rtc"]["day"] = rtc.day();
+    rtcDoc["rtc"]["dayOfWeek"] = rtc.dayOfWeek();
+    rtcDoc["rtc"]["hour"] = rtc.hour();
+    rtcDoc["rtc"]["minute"] = rtc.minute();
+    rtcDoc["rtc"]["second"] = rtc.second();
+
+    // Send to all connected WebSocket clients
+    String response;
+    serializeJson(rtcDoc, response);
+    ws.textAll(response);
+
+    Serial.printf("🕐 RTC Time sent: %02d/%02d/%04d %02d:%02d:%02d (DOW: %d)\n",
+                  rtc.day(), rtc.month(), rtc.year() + 2000,
+                  rtc.hour(), rtc.minute(), rtc.second(), rtc.dayOfWeek());
+}
+
+/**
+ * @brief Calibrate RTC with browser time
+ * @param calibrationData JSON object containing browser time data
+ * @return bool True if calibration successful, false if failed
+ * @note Sets RTC to exact time received from browser
+ */
+bool calibrateRTC(JsonObject calibrationData)
+{
+    try
+    {
+        // Extract time data from browser
+        int year = calibrationData["year"];
+        int month = calibrationData["month"];
+        int day = calibrationData["day"];
+        int dayOfWeek = calibrationData["dayOfWeek"];
+        int hour = calibrationData["hour"];
+        int minute = calibrationData["minute"];
+        int second = calibrationData["second"];
+
+        // Validate time data
+        if (year < 2020 || year > 2099 ||
+            month < 1 || month > 12 ||
+            day < 1 || day > 31 ||
+            dayOfWeek < 1 || dayOfWeek > 7 ||
+            hour < 0 || hour > 23 ||
+            minute < 0 || minute > 59 ||
+            second < 0 || second > 59)
+        {
+            Serial.println("❌ RTC Calibration: Invalid time data received");
+            return false;
+        }
+
+        // Log calibration attempt
+        Serial.printf("🕐 RTC Calibration: Setting time to %02d/%02d/%04d %02d:%02d:%02d (DOW: %d)\n",
+                      day, month, year, hour, minute, second, dayOfWeek);
+
+        // Set RTC time
+        rtc.set(second, minute, hour, dayOfWeek, day, month, year - 2000);
+
+        // Verify calibration by reading back
+        delay(100);
+        rtc.refresh();
+
+        Serial.printf("🕐 RTC Calibration: Verification - %02d/%02d/%04d %02d:%02d:%02d (DOW: %d)\n",
+                      rtc.day(), rtc.month(), rtc.year() + 2000,
+                      rtc.hour(), rtc.minute(), rtc.second(), rtc.dayOfWeek());
+
+        Serial.println("✅ RTC Calibration: Successfully calibrated with browser time");
+        return true;
+    }
+    catch (...)
+    {
+        Serial.println("❌ RTC Calibration: Exception occurred during calibration");
+        return false;
+    }
+}
+
+/**
+ * @brief Broadcast RTC time periodically to frontend
+ * @note Called from main loop untuk real-time time display
+ */
+void broadcastRTCTime()
+{
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastRTCBroadcast >= RTC_BROADCAST_INTERVAL)
+    {
+        sendRTCTime();
+        lastRTCBroadcast = currentMillis;
+    }
 }
 
 // =================================================================
@@ -1006,6 +1230,41 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         generateAndSendPlaylist(); // Send fixed playlist
         return;
     }
+    if (command == "getRTC")
+    {
+        sendRTCTime(); // Send current RTC time
+        return;
+    }
+
+    // =================================================================
+    // RTC CALIBRATION COMMAND
+    // =================================================================
+    if (command == "rtc-calibrate")
+    {
+        JsonObject calibrationData = doc["value"];
+        bool calibrationSuccess = calibrateRTC(calibrationData);
+
+        // Send calibration response to frontend
+        JsonDocument responseDoc;
+        responseDoc["type"] = "rtcCalibrated";
+        responseDoc["success"] = calibrationSuccess;
+        if (!calibrationSuccess)
+        {
+            responseDoc["error"] = "Failed to calibrate RTC";
+        }
+
+        String response;
+        serializeJson(responseDoc, response);
+        ws.textAll(response);
+
+        // Send updated RTC time if calibration successful
+        if (calibrationSuccess)
+        {
+            delay(200); // Short delay before sending updated time
+            sendRTCTime();
+        }
+        return;
+    }
 
     // =================================================================
     // TIMER COMMANDS
@@ -1151,6 +1410,8 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     if (type == WS_EVT_CONNECT)
     {
         Serial.printf("🔗 WebSocket klien #%u terhubung\n", client->id());
+        // Send RTC time immediately when client connects
+        sendRTCTime();
     }
     else if (type == WS_EVT_DISCONNECT)
     {
@@ -1236,6 +1497,12 @@ void setup()
     }
     checkAndSetRTC();
 
+    // Log initial RTC time
+    rtc.refresh();
+    Serial.printf("🕐 Initial RTC Time: %02d/%02d/%04d %02d:%02d:%02d (DOW: %d)\n",
+                  rtc.day(), rtc.month(), rtc.year() + 2000,
+                  rtc.hour(), rtc.minute(), rtc.second(), rtc.dayOfWeek());
+
     // Load settings dari non-volatile storage
     loadSettings();
 
@@ -1251,6 +1518,15 @@ void setup()
         return;
     }
     Serial.println("✅ SPIFFS file system mounted successfully.");
+
+    Serial.println("📁 Available files in SPIFFS:");
+    File root = SPIFFS.open("/");
+    File file = root.openNextFile();
+    while (file)
+    {
+        Serial.printf("   - %s (%d bytes)\n", file.name(), file.size());
+        file = root.openNextFile();
+    }
 
     // =================================================================
     // NETWORK INITIALIZATION
@@ -1286,16 +1562,41 @@ void setup()
     ws.onEvent(onEvent);
     server.addHandler(&ws);
 
-    // Setup HTTP routes
+    // Main route - serve homepage
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(SPIFFS, "/index.html", "text/html"); });
+              { 
+                  Serial.println("📄 Serving root page -> index.html");
+                  serveFileFromSPIFFS(request, "/index.html"); });
+
+    // ⭐ NEW: Explicit CSS route with multiple fallback paths
+    server.on("/css/swell-styles.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { 
+                  Serial.println("📄 CSS requested: /css/swell-styles.css");
+                  serveFileFromSPIFFS(request, "/css/swell-styles.css"); });
+
+    // ⭐ NEW: Root level CSS fallback
+    server.on("/swell-styles.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { 
+                  Serial.println("📄 CSS requested: /swell-styles.css (root level)");
+                  serveFileFromSPIFFS(request, "/swell-styles.css"); });
+
+    // ⭐ NEW: Generic static file handler with better logging
+    server.onNotFound([](AsyncWebServerRequest *request)
+                      {
+        String path = request->url();
+        Serial.printf("📄 Requested: %s\n", path.c_str());
+        
+        // Try to serve any requested file
+        serveFileFromSPIFFS(request, path); });
+
+    // ⭐ IMPROVED: Better static file serving for all files
+    server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
     // Serve static files dari SPIFFS
     server.serveStatic("/", SPIFFS, "/");
 
     // Start web server
     server.begin();
-    Serial.println("✅ Web server started on port 80");
 
     // =================================================================
     // STARTUP COMPLETE
@@ -1305,6 +1606,7 @@ void setup()
     Serial.printf("🔔 Alarm Track: Fixed to #%d\n", ALARM_TRACK_NUMBER);
     Serial.printf("🎵 DFPlayer Status: %s\n", dfPlayerInitialized ? "OK" : "ERROR");
     Serial.printf("⏰ Music Max Duration: 1 Hour (3600 seconds)\n");
+    Serial.printf("🕐 RTC Calibration: Available via WebSocket commands\n");
     Serial.printf("🌐 Web Interface: http://%s\n", WiFi.localIP().toString().c_str());
 }
 
@@ -1331,6 +1633,9 @@ void loop()
         notifyClients();
         lastStatusBroadcast = millis();
     }
+
+    // ⭐ NEW: Broadcast RTC time secara periodik (setiap 30 detik)
+    broadcastRTCTime();
 
     // Small delay untuk prevent watchdog reset
     delay(10);

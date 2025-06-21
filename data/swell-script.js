@@ -1,9 +1,10 @@
 /**
- * swell-script.js - Updated for NO REPEAT 1-Hour Music System
+ * swell-script.js - Updated for NO REPEAT 1-Hour Music System + RTC Calibration
  * Versi fungsional penuh untuk homepage dan halaman detail.
  * Berkomunikasi langsung dengan ESP32 via WebSocket.
  * Mengelola daftar perangkat menggunakan localStorage browser.
  * UPDATED PLAYLIST: Nature sounds dengan durasi maksimal 1 jam tanpa repeat
+ * NEW FEATURE: RTC Calibration dengan waktu browser
  */
 
 // =================================================================
@@ -20,6 +21,13 @@ const FIXED_RELAX_PLAYLIST = [
 ];
 
 const ALARM_TRACK = { trackNumber: 5, title: "ALARM SOUND", filename: "0005_Alarm_sound_alarm.mp3" };
+
+// =================================================================
+// RTC TIME TRACKING VARIABLES
+// =================================================================
+let rtcTimeOffset = 0; // Offset in milliseconds between RTC and browser time
+let rtcTimeReceived = null; // Last received RTC time from ESP32
+let rtcTimeReceivedAt = null; // When the RTC time was received
 
 // =================================================================
 // LOGIKA UTAMA & INISIALISASI
@@ -185,9 +193,13 @@ function initializeDeviceDetailPage() {
         console.log(`Connection to ${deviceIp} opened.`);
         updateConnectionStatus(true, deviceName);
         sendCommand('getStatus');
+        sendCommand('getRTC'); // Request RTC time
 
         // ⭐ UPDATE: Populate dropdown dengan playlist baru
         populateSongDropdownWithFixedPlaylist();
+
+        // Initialize RTC time display updates
+        startRTCTimeUpdates();
     }
 
     function onClose(event) {
@@ -213,6 +225,12 @@ function initializeDeviceDetailPage() {
                 // ⭐ UPDATED: Gunakan fixed playlist, abaikan playlist dari device
                 console.log('📻 Received playlist from device, but using fixed playlist instead');
                 populateSongDropdownWithFixedPlaylist();
+            } else if (data.type === 'rtcTime') {
+                // ⭐ NEW: Handle RTC time update
+                handleRTCTimeUpdate(data);
+            } else if (data.type === 'rtcCalibrated') {
+                // ⭐ NEW: Handle RTC calibration response
+                handleRTCCalibrationResponse(data);
             }
         } catch (e) {
             console.error("Failed to parse JSON from ESP32:", e);
@@ -221,6 +239,167 @@ function initializeDeviceDetailPage() {
 
     // Pasang semua event listener untuk elemen UI
     setupEventListeners();
+    setupRTCCalibration(); // Setup RTC calibration
+}
+
+// =================================================================
+// NEW: RTC TIME FUNCTIONS
+// =================================================================
+
+/**
+ * Handle RTC time update from ESP32
+ */
+function handleRTCTimeUpdate(data) {
+    console.log('🕐 RTC Time received from ESP32:', data);
+
+    // Parse RTC time from ESP32
+    const rtcData = data.rtc;
+    const rtcTime = new Date(
+        rtcData.year + 2000, // ESP32 sends year as offset from 2000
+        rtcData.month - 1,   // JS months are 0-based
+        rtcData.day,
+        rtcData.hour,
+        rtcData.minute,
+        rtcData.second
+    );
+
+    // Store RTC time and calculate offset
+    rtcTimeReceived = rtcTime;
+    rtcTimeReceivedAt = new Date();
+    rtcTimeOffset = rtcTimeReceived.getTime() - rtcTimeReceivedAt.getTime();
+
+    console.log(`🕐 RTC Time: ${rtcTime.toLocaleString()}`);
+    console.log(`🕐 Browser Time: ${rtcTimeReceivedAt.toLocaleString()}`);
+    console.log(`🕐 Offset: ${rtcTimeOffset / 1000} seconds`);
+
+    // Update display immediately
+    updateRTCTimeDisplay();
+}
+
+/**
+ * Handle RTC calibration response from ESP32
+ */
+function handleRTCCalibrationResponse(data) {
+    const calibrationMessage = document.getElementById('calibration-message');
+    const calibrateButton = document.getElementById('rtc-calibrate-button');
+
+    if (data.success) {
+        calibrationMessage.textContent = '✅ RTC successfully calibrated with browser time!';
+        calibrationMessage.style.color = '#4cd964';
+
+        // Reset offset since RTC is now synced
+        rtcTimeOffset = 0;
+        rtcTimeReceived = new Date();
+        rtcTimeReceivedAt = new Date();
+
+        console.log('✅ RTC Calibration successful');
+    } else {
+        calibrationMessage.textContent = '❌ RTC calibration failed. Please try again.';
+        calibrationMessage.style.color = '#ff3b30';
+        console.error('❌ RTC Calibration failed:', data.error);
+    }
+
+    calibrateButton.disabled = false;
+
+    // Clear message after 3 seconds
+    setTimeout(() => {
+        calibrationMessage.textContent = '';
+    }, 3000);
+}
+
+/**
+ * Calculate current RTC time based on offset
+ */
+function getCurrentRTCTime() {
+    if (!rtcTimeReceived || !rtcTimeReceivedAt) {
+        return new Date(); // Fallback to browser time
+    }
+
+    const now = new Date();
+    const elapsedSinceReceived = now.getTime() - rtcTimeReceivedAt.getTime();
+    const estimatedRTCTime = new Date(rtcTimeReceived.getTime() + elapsedSinceReceived);
+
+    return estimatedRTCTime;
+}
+
+/**
+ * Update RTC time display in UI
+ */
+function updateRTCTimeDisplay() {
+    const rtcTime = getCurrentRTCTime();
+    const timeStr = rtcTime.toTimeString().slice(0, 8);
+    const rtcTimeValue = document.getElementById('rtc-time-value');
+
+    if (rtcTimeValue) rtcTimeValue.textContent = timeStr;
+}
+
+/**
+ * Update time comparison display
+ */
+function updateTimeComparison() {
+    const browserTime = new Date();
+    const rtcTime = getCurrentRTCTime();
+
+    const browserTimeElement = document.getElementById('browser-time');
+    const rtcTimeComparisonElement = document.getElementById('rtc-time-comparison');
+
+    if (browserTimeElement) {
+        browserTimeElement.textContent = browserTime.toTimeString().slice(0, 8);
+    }
+
+    if (rtcTimeComparisonElement) {
+        rtcTimeComparisonElement.textContent = rtcTime.toTimeString().slice(0, 8);
+    }
+}
+
+/**
+ * Start RTC time display updates
+ */
+function startRTCTimeUpdates() {
+    // Update displays every second
+    setInterval(() => {
+        updateRTCTimeDisplay();
+        updateTimeComparison();
+    }, 1000);
+
+    // Request RTC time update every 30 seconds to maintain accuracy
+    setInterval(() => {
+        if (websocket && websocket.readyState === WebSocket.OPEN) {
+            sendCommand('getRTC');
+        }
+    }, 30000);
+}
+
+/**
+ * Setup RTC calibration button
+ */
+function setupRTCCalibration() {
+    const calibrateButton = document.getElementById('rtc-calibrate-button');
+    const calibrationMessage = document.getElementById('calibration-message');
+
+    if (calibrateButton) {
+        calibrateButton.addEventListener('click', function () {
+            // Show calibration in progress
+            calibrationMessage.textContent = '🔄 Calibrating RTC...';
+            calibrationMessage.style.color = '#f7a325';
+            calibrateButton.disabled = true;
+
+            // Get current browser time
+            const browserTime = new Date();
+            const calibrationData = {
+                year: browserTime.getFullYear(),
+                month: browserTime.getMonth() + 1, // JS months are 0-based, ESP32 expects 1-based
+                day: browserTime.getDate(),
+                dayOfWeek: browserTime.getDay() + 1, // JS: 0=Sunday, ESP32: 1=Sunday
+                hour: browserTime.getHours(),
+                minute: browserTime.getMinutes(),
+                second: browserTime.getSeconds()
+            };
+
+            console.log('🕐 Sending RTC calibration data:', calibrationData);
+            sendCommand('rtc-calibrate', calibrationData);
+        });
+    }
 }
 
 /** 

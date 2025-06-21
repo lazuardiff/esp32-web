@@ -70,6 +70,46 @@ body {
     z-index: 1;
 }
 
+/* RTC Time Display */
+.rtc-time-display {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.rtc-time-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rtc-time-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2d2a3c;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 5px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.rtc-date-value {
+    font-size: 16px;
+    color: #666;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
 /* Links & Navigation */
 .device-link,
 .back-link {
@@ -176,23 +216,34 @@ body {
     z-index: 1;
 }
 
-/* Detail Page Styles */
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
 .back-button {
     font-size: 24px;
-    margin-bottom: 20px;
     cursor: pointer;
     width: 30px;
     height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    z-index: 1;
     transition: transform 0.2s;
+    flex-shrink: 0;
 }
 
 .back-button:hover {
     transform: translateX(-3px);
+}
+
+.detail-header-spacer {
+    width: 30px;
+    flex-shrink: 0;
 }
 
 .feature-section {
@@ -231,27 +282,29 @@ body {
 
 /* Toggle Switch */
 .toggle {
-    width: 40px;
-    height: 20px;
+    width: 48px;
+    height: 24px;
     background-color: #ccc;
-    border-radius: 20px;
+    border-radius: 24px;
     position: relative;
     cursor: pointer;
     transition: background-color 0.3s;
-    min-width: 48px;
-    /* Touch-friendly */
-    min-height: 24px;
+    display: flex;
+    align-items: center;
+    padding: 2px;
 }
 
 .toggle-slider {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     background-color: white;
     border-radius: 50%;
     position: absolute;
-    top: 1px;
-    left: 1px;
-    transition: transform 0.3s;
+    top: 50%;
+    left: 2px;
+    transform: translateY(-50%);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle.active {
@@ -259,7 +312,7 @@ body {
 }
 
 .toggle.active .toggle-slider {
-    transform: translateX(20px);
+    transform: translateX(24px) translateY(-50%);
 }
 
 /* Disabled controls */
@@ -290,8 +343,8 @@ select:disabled {
 
 .expanded-controls.expanded {
     padding: 15px;
-    max-height: 450px;
-    /* ⭐ INCREASED from 350px to accommodate new info notices */
+    max-height: 750px;
+    /* ⭐ INCREASED to accommodate RTC calibration section */
     opacity: 1;
 }
 
@@ -326,12 +379,24 @@ select:disabled {
 
 .song-dropdown {
     width: 100%;
-    padding: 8px;
+    padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid #ddd;
+    border: 2px solid #ddd;
     background-color: white;
     color: #333;
     font-size: 14px;
+    font-weight: 500;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.song-dropdown:focus {
+    outline: none;
+    border-color: #4cd964;
+    box-shadow: 0 0 0 3px rgba(76, 217, 100, 0.1);
+}
+
+.song-dropdown:hover {
+    border-color: #4cd964;
 }
 
 /* Volume/Intensity Controls */
@@ -604,6 +669,114 @@ select:disabled {
     background-color: #4cd964;
 }
 
+/* RTC Calibration Section */
+.rtc-calibration-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #e0e0e0;
+    background-color: #fafafa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.rtc-sync-info {
+    margin-bottom: 15px;
+}
+
+.rtc-comparison {
+    background-color: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.time-comparison-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+
+.time-comparison-row:last-child {
+    margin-bottom: 0;
+}
+
+.time-label {
+    font-size: 13px;
+    color: #555;
+    font-weight: 600;
+    min-width: 100px;
+}
+
+.time-value {
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: bold;
+    color: #2d2a3c;
+    background-color: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    min-width: 80px;
+    text-align: center;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.calibrate-button {
+    background: linear-gradient(135deg, #4cd964, #3db854);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(76, 217, 100, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.calibrate-button:hover {
+    background: linear-gradient(135deg, #3db854, #2ea043);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(76, 217, 100, 0.4);
+}
+
+.calibrate-button:active {
+    transform: translateY(0);
+}
+
+.calibrate-button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.rtc-calibration-status {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.calibration-message {
+    font-size: 13px;
+    font-weight: 600;
+    min-height: 20px;
+    transition: color 0.3s ease;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
 /* Timer & Light Notifications */
 .timer-notification {
     padding: 10px;
@@ -632,12 +805,10 @@ select:disabled {
     font-weight: bold;
 }
 
-/* ⭐ NEW: Music Info Notice Styling */
+/* Music Info Notice Styling */
 .music-info-notice {
     background-color: rgba(76, 217, 100, 0.1);
-    /* Green tint for music */
     border-left: 3px solid #4cd964;
-    /* Green border */
     padding: 8px 12px;
     margin-bottom: 15px;
     border-radius: 5px;
@@ -652,7 +823,6 @@ select:disabled {
 .music-info-notice strong {
     font-weight: bold;
     color: #2d7a3d;
-    /* Darker green for emphasis */
 }
 
 /* Light Card Styling */
@@ -665,18 +835,16 @@ select:disabled {
     color: #f7a325;
 }
 
-/* ⭐ NEW: Music Card Special Styling for NO REPEAT mode */
+/* Music Card Special Styling for NO REPEAT mode */
 #music-card:not(.feature-dependent) {
     border-left: 4px solid #4cd964;
-    /* Green border untuk musik */
 }
 
 #music-card:not(.feature-dependent) .feature-icon {
     color: #4cd964;
-    /* Green icon untuk musik */
 }
 
-/* ⭐ NEW: Special styling untuk status text yang menunjukkan mode */
+/* Special styling for status text */
 #music-status {
     font-weight: bold;
 }
@@ -693,7 +861,6 @@ select:disabled {
     transition: opacity 0.3s ease;
 }
 
-/* Show green indicator when music is ON */
 .toggle.active+* #music-status:after,
 #music-card .toggle.active~* #music-status:after {
     opacity: 1;
@@ -755,58 +922,9 @@ input[type="range"]::-moz-range-track {
     border-radius: 2px;
 }
 
-/* ⭐ NEW: Enhanced dropdown styling untuk updated playlist */
-.song-dropdown {
-    width: 100%;
-    padding: 10px 12px;
-    /* Increased padding */
-    border-radius: 8px;
-    border: 2px solid #ddd;
-    /* Thicker border */
-    background-color: white;
-    color: #333;
-    font-size: 14px;
-    font-weight: 500;
-    /* Medium weight */
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.song-dropdown:focus {
-    outline: none;
-    border-color: #4cd964;
-    /* Green focus border */
-    box-shadow: 0 0 0 3px rgba(76, 217, 100, 0.1);
-    /* Green glow */
-}
-
-.song-dropdown:hover {
-    border-color: #4cd964;
-    /* Green hover border */
-}
-
-/* ⭐ NEW: Info boxes untuk different features dengan color coding */
-.timer-notification {
-    background-color: rgba(247, 163, 37, 0.1);
-    /* Orange */
-    border-left: 3px solid #f7a325;
-}
-
-.light-info-notice {
-    background-color: rgba(247, 163, 37, 0.1);
-    /* Orange */
-    border-left: 3px solid #f7a325;
-}
-
-.music-info-notice {
-    background-color: rgba(76, 217, 100, 0.1);
-    /* Green */
-    border-left: 3px solid #4cd964;
-}
-
-/* ⭐ NEW: Aromatherapy info (if we add it later) */
+/* Aromatherapy info */
 .aroma-info-notice {
     background-color: rgba(138, 43, 226, 0.1);
-    /* Purple */
     border-left: 3px solid #8a2be2;
 }
 
@@ -824,23 +942,73 @@ input[type="range"]::-moz-range-track {
         font-size: 14px;
     }
 
-    .feature-card {
+    /* RTC Time Display Mobile */
+    .rtc-time-display {
         padding: 12px;
+        margin-bottom: 15px;
+    }
+
+    .rtc-time-value {
+        font-size: 24px;
+    }
+
+    .rtc-date-value {
+        font-size: 14px;
+    }
+
+    /* RTC Calibration Mobile */
+    .rtc-calibration-section {
+        margin-top: 15px;
+        padding: 15px;
+    }
+
+    .time-comparison-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        margin-bottom: 10px;
+    }
+
+    .time-label {
+        font-size: 12px;
+        min-width: auto;
+    }
+
+    .time-value {
+        font-size: 13px;
+        align-self: flex-end;
+        min-width: 70px;
+    }
+
+    .calibrate-button {
+        padding: 10px 15px;
+        font-size: 13px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .calibration-message {
+        font-size: 12px;
+        padding: 6px;
+    }
+
+    .feature-card {
         flex-wrap: wrap;
     }
 
     .feature-left {
-        margin-bottom: 8px;
         width: 100%;
+        margin-bottom: 8px;
     }
 
     .toggle {
         margin-left: auto;
+        width: 52px;
+        height: 28px;
     }
 
     .expanded-controls.expanded {
-        max-height: 550px;
-        /* ⭐ INCREASED for mobile to accommodate new info notices */
+        max-height: 800px;
         padding: 15px 10px;
     }
 
@@ -870,7 +1038,7 @@ input[type="range"]::-moz-range-track {
         height: 40px;
     }
 
-    /* ⭐ NEW: Mobile-specific adjustments untuk info notices */
+    /* Mobile-specific adjustments for info notices */
     .music-info-notice,
     .light-info-notice,
     .timer-notification {
