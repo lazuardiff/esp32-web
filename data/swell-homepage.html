@@ -53,19 +53,6 @@
     </div>
 
     <script src="js/swell-script.js"></script>
-    <script>
-        // Add this right after the main script to show a frontend-only notice
-        document.addEventListener('DOMContentLoaded', function () {
-            // Create frontend-only mode notice
-            const notice = document.createElement('div');
-            notice.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(247, 163, 37, 0.9); ' +
-                'color: white; padding: 8px 12px; border-radius: 5px; font-size: 12px; z-index: 9999;';
-            notice.textContent = 'Frontend Demo Mode (No Backend)';
-
-            // Add to body
-            document.body.appendChild(notice);
-        });
-    </script>
 </body>
 
 </html>

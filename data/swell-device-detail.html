@@ -75,18 +75,11 @@
             <div class="feature-card collapsible feature-dependent" id="light-card">
                 <div class="feature-left">
                     <div class="feature-icon">🌙</div>
-                    <div><span class="bold">Night Lights</span><br>
-                        <small style="color: #666;">Controls yellow light intensity during timer phase</small>
-                    </div>
                 </div>
                 <div class="dependency-notice">Enable timer first</div>
             </div>
             <!-- Expanded light controls -->
             <div class="expanded-controls" id="light-controls">
-                <div class="light-info-notice">
-                    <p><strong>🌙 Yellow Light:</strong> Active during timer phase (controllable intensity)</p>
-                    <p><strong>☀️ White Light:</strong> Active outside timer phase (always full brightness)</p>
-                </div>
                 <div class="control-group">
                     <label for="intensity-slider" class="control-label">Yellow Light Intensity:</label>
                     <div class="volume-control-wrapper">
@@ -110,7 +103,6 @@
                 <div class="feature-left">
                     <div class="feature-icon">💨</div>
                     <div><span class="bold">Aromatherapy</span>: <span id="aroma-status">OFF</span><br>
-                        <small style="color: #666;">5s ON / 5min OFF pattern, auto-stop after 1 hour</small>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="aroma-toggle">
@@ -124,7 +116,6 @@
                 <div class="feature-left">
                     <div class="feature-icon">🔔</div>
                     <div><span class="bold">Alarm</span>: <span id="alarm-status">OFF</span><br>
-                        <small style="color: #666;">Fixed alarm sound - 5 minutes duration</small>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="alarm-toggle">
@@ -138,7 +129,6 @@
                 <div class="feature-left">
                     <div class="feature-icon">🎵</div>
                     <div><span class="bold">Relax Music</span>: <span id="music-status">OFF</span><br>
-                        <small style="color: #666;">Nature sounds - NO REPEAT, max 1 hour</small>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="music-toggle">
@@ -149,13 +139,6 @@
 
             <!-- ⭐ UPDATED: Expanded music controls dengan updated playlist -->
             <div class="expanded-controls" id="music-controls">
-                <!-- ⭐ NEW: Music mode explanation -->
-                <div class="music-info-notice">
-                    <p><strong>🎵 NO REPEAT MODE:</strong> Each track plays once without looping</p>
-                    <p><strong>⏰ 1-Hour Limit:</strong> Music auto-stops after 60 minutes maximum</p>
-                    <p><strong>🎶 Nature Sounds:</strong> High-quality ambient tracks for better sleep</p>
-                </div>
-
                 <div class="control-group">
                     <label for="song-select" class="control-label">Select Nature Sound:</label>
                     <select id="song-select" class="song-dropdown">
@@ -197,10 +180,6 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Create frontend-only mode notice
             const notice = document.createElement('div');
-            notice.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(247, 163, 37, 0.9); ' +
-                'color: white; padding: 8px 12px; border-radius: 5px; font-size: 12px; z-index: 9999;';
-            notice.textContent = 'Frontend Demo Mode (No Backend)';
-
             // Add to body
             document.body.appendChild(notice);
 
