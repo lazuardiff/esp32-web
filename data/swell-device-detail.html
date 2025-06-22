@@ -56,7 +56,6 @@
             <!-- Timer expanded controls -->
             <div class="expanded-controls" id="timer-controls">
                 <div class="timer-notification">
-                    <p>Set timer to activate features during specified hours.</p>
                 </div>
                 <div class="control-group">
                     <div class="timer-controls">
@@ -93,7 +92,7 @@
                     </div>
                     <div class="confirm-button-wrapper">
                         <button id="rtc-calibrate-button" class="calibrate-button">
-                            🔄 Calibrate RTC with Browser Time
+                            Calibrate RTC
                         </button>
                     </div>
                     <div class="rtc-calibration-status" id="rtc-calibration-status">
@@ -130,11 +129,12 @@
                 </div>
             </div>
 
-            <!-- Aromatherapy Feature Card -->
+            <!-- ⭐ FIXED: Aromatherapy Feature Card dengan status yang menunjukkan user setting vs execution -->
             <div class="feature-card feature-dependent">
                 <div class="feature-left">
                     <div class="feature-icon">💨</div>
-                    <div><span class="bold">Aromatherapy</span>: <span id="aroma-status">OFF</span><br>
+                    <div>
+                        <span class="bold">Aromatherapy</span>: <span id="aroma-status">OFF</span><br>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="aroma-toggle">
@@ -143,11 +143,12 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Alarm Feature Card - No dropdown, fixed track -->
+            <!-- ⭐ FIXED: Alarm Feature Card dengan status yang menunjukkan user setting -->
             <div class="feature-card feature-dependent">
                 <div class="feature-left">
                     <div class="feature-icon">🔔</div>
-                    <div><span class="bold">Alarm</span>: <span id="alarm-status">OFF</span><br>
+                    <div>
+                        <span class="bold">Alarm</span>: <span id="alarm-status">OFF</span><br>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="alarm-toggle">
@@ -156,11 +157,12 @@
                 <div class="dependency-notice">Enable timer first</div>
             </div>
 
-            <!-- Relax Music Feature Card -->
+            <!-- ⭐ FIXED: Relax Music Feature Card dengan status yang menunjukkan user setting vs execution -->
             <div class="feature-card collapsible feature-dependent" id="music-card">
                 <div class="feature-left">
                     <div class="feature-icon">🎵</div>
-                    <div><span class="bold">Relax Music</span>: <span id="music-status">OFF</span><br>
+                    <div>
+                        <span class="bold">Relax Music</span>: <span id="music-status">OFF</span><br>
                     </div>
                 </div>
                 <div class="toggle dependent-disabled" id="music-toggle">
@@ -205,18 +207,11 @@
         </div>
     </div>
 
-    <!-- ⭐ FIXED: Remove demo override script and use real functionality -->
+    <!-- ⭐ FIXED: Real device functionality dengan user settings separation -->
     <script src="swell-script.js"></script>
     <script>
-        // ⭐ FIXED: Real device detail initialization without demo overrides
         document.addEventListener('DOMContentLoaded', function () {
-            // Only initialize if this is device detail page with real device connection
             if (document.getElementById('detail-page')) {
-                // Use real device functionality from swell-script.js
-                console.log('🚀 SWELL Device Detail - Real Mode Initialized');
-
-                // No demo overrides - let the real WebSocket connections work
-                // The main script will handle everything properly
             }
         });
     </script>

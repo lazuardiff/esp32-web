@@ -1,10 +1,7 @@
 /**
- * swell-script.js - Updated for NO REPEAT 1-Hour Music System + RTC Calibration
- * Versi fungsional penuh untuk homepage dan halaman detail.
- * Berkomunikasi langsung dengan ESP32 via WebSocket.
- * Mengelola daftar perangkat menggunakan localStorage browser.
- * UPDATED PLAYLIST: Nature sounds dengan durasi maksimal 1 jam tanpa repeat
- * NEW FEATURE: RTC Calibration dengan waktu browser
+ * swell-script.js - FIXED VERSION untuk User Settings terpisah dari Execution State
+ * ⭐ MAJOR FIX: Frontend update UI berdasarkan USER SETTINGS (persistent config)
+ * bukan execution state (runtime), sehingga user bisa set toggle kapan saja
  */
 
 // =================================================================
@@ -25,18 +22,17 @@ const ALARM_TRACK = { trackNumber: 5, title: "ALARM SOUND", filename: "0005_Alar
 // =================================================================
 // RTC TIME TRACKING VARIABLES
 // =================================================================
-let rtcTimeOffset = 0; // Offset in milliseconds between RTC and browser time
-let rtcTimeReceived = null; // Last received RTC time from ESP32
-let rtcTimeReceivedAt = null; // When the RTC time was received
+let rtcTimeOffset = 0;
+let rtcTimeReceived = null;
+let rtcTimeReceivedAt = null;
 
 // =================================================================
 // LOGIKA UTAMA & INISIALISASI
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    createStars(); // Efek bintang di latar belakang
+    createStars();
 
-    // Cek halaman mana yang aktif dan jalankan inisialisasi yang sesuai.
     if (document.getElementById('home-page')) {
         initializeHomePage();
     } else if (document.getElementById('detail-page')) {
@@ -55,17 +51,16 @@ function initializeHomePage() {
     const closeModalBtn = document.querySelector('.close-modal');
     const deviceListContainer = document.getElementById('device-list');
 
-    // Ganti form scan dengan form input IP
     const modalBody = document.querySelector('.modal-body');
     modalBody.innerHTML = `
         <p>Masukkan detail untuk perangkat SWELL Anda.</p>
         <div class="control-group">
             <label for="deviceNameInput" class="control-label">Nama Perangkat:</label>
-            <input type="text" id="deviceNameInput" placeholder="Contoh: Lampu Kamar" class="song-dropdown">
+            <input type="text" id="deviceNameInput" placeholder="Contoh: : Lenora" class="song-dropdown">
         </div>
         <div class="control-group">
             <label for="deviceIpInput" class="control-label">Alamat IP Perangkat:</label>
-            <input type="text" id="deviceIpInput" placeholder="Contoh: 192.168.1.15" class="song-dropdown">
+            <input type="text" id="deviceIpInput" placeholder="Contoh: 192.168.174.126" class="song-dropdown">
         </div>
         <div class="confirm-button-wrapper">
             <button id="save-device-btn" class="confirm-button">Simpan Perangkat</button>
@@ -74,12 +69,10 @@ function initializeHomePage() {
 
     const saveDeviceBtn = document.getElementById('save-device-btn');
 
-    // --- Event Listeners ---
     addDeviceBtn.addEventListener('click', () => connectionModal.classList.add('active'));
     closeModalBtn.addEventListener('click', () => connectionModal.classList.remove('active'));
     saveDeviceBtn.addEventListener('click', saveNewDevice);
 
-    // --- Fungsi ---
     function getSavedDevices() {
         return JSON.parse(localStorage.getItem('swell_devices') || '[]');
     }
@@ -98,7 +91,6 @@ function initializeHomePage() {
         }
 
         let devices = getSavedDevices();
-        // Cek jika IP sudah ada, untuk menghindari duplikat
         if (devices.find(d => d.ip === ip)) {
             alert('Perangkat dengan Alamat IP ini sudah ada.');
             return;
@@ -107,7 +99,7 @@ function initializeHomePage() {
         devices.push({ name, ip });
         saveDevices(devices);
         refreshDeviceList();
-        connectionModal.classList.remove('active'); // Tutup modal setelah disimpan
+        connectionModal.classList.remove('active');
     }
 
     function removeDevice(ip) {
@@ -121,7 +113,7 @@ function initializeHomePage() {
 
     function refreshDeviceList() {
         const devices = getSavedDevices();
-        deviceListContainer.innerHTML = ''; // Kosongkan daftar
+        deviceListContainer.innerHTML = '';
 
         if (devices.length === 0) {
             deviceListContainer.innerHTML = `<div class="no-devices">Belum ada perangkat. Klik "Add Device" untuk memulai.</div>`;
@@ -131,12 +123,11 @@ function initializeHomePage() {
         devices.forEach(device => {
             const deviceElement = document.createElement('div');
             deviceElement.className = 'device-container';
-            // Arahkan ke halaman detail dengan membawa parameter IP
             deviceElement.innerHTML = `
                 <a href="swell-device-detail.html?ip=${encodeURIComponent(device.ip)}&name=${encodeURIComponent(device.name)}" class="device-link">
                     <div class="device-card" data-ip="${device.ip}">
                         <div class="device-icon">
-                            <img src="media/logo.png" alt="Device" class="device-img">
+                            <img src="logo.png" alt="Device" class="device-img">
                         </div>
                         <div class="device-info">
                             <div class="device-name">${device.name}</div>
@@ -148,14 +139,12 @@ function initializeHomePage() {
             `;
             deviceListContainer.appendChild(deviceElement);
 
-            // Tambahkan event listener untuk tombol hapus
             deviceElement.querySelector('.remove-device-btn').addEventListener('click', (e) => {
                 removeDevice(e.currentTarget.dataset.ip);
             });
         });
     }
 
-    // Muat daftar perangkat saat halaman pertama kali dibuka
     refreshDeviceList();
 }
 
@@ -179,11 +168,10 @@ function initializeDeviceDetailPage() {
     }
 
     console.log(`Initializing Detail Page for device at ${deviceIp}`);
-    console.log(`📻 Updated fixed playlist available: ${FIXED_RELAX_PLAYLIST.length} nature sounds (NO REPEAT, MAX 1 HOUR)`);
+    console.log(`📻 FIXED: Website sebagai setting skenario - user bisa set toggle kapan saja!`);
 
     const gateway = `ws://${deviceIp}/ws`;
 
-    // --- Inisialisasi WebSocket ---
     websocket = new WebSocket(gateway);
     websocket.onopen = onOpen;
     websocket.onclose = onClose;
@@ -193,12 +181,9 @@ function initializeDeviceDetailPage() {
         console.log(`Connection to ${deviceIp} opened.`);
         updateConnectionStatus(true, deviceName);
         sendCommand('getStatus');
-        sendCommand('getRTC'); // Request RTC time
+        sendCommand('getRTC');
 
-        // ⭐ UPDATE: Populate dropdown dengan playlist baru
         populateSongDropdownWithFixedPlaylist();
-
-        // Initialize RTC time display updates
         startRTCTimeUpdates();
     }
 
@@ -206,7 +191,6 @@ function initializeDeviceDetailPage() {
         console.log(`Connection to ${deviceIp} closed. Retrying...`);
         updateConnectionStatus(false, deviceName);
         setTimeout(() => {
-            // Coba sambung lagi
             websocket = new WebSocket(gateway);
             websocket.onopen = onOpen;
             websocket.onclose = onClose;
@@ -220,16 +204,14 @@ function initializeDeviceDetailPage() {
             console.log(`Message from ${deviceIp}:`, data);
 
             if (data.type === 'statusUpdate') {
-                updateUIFromState(data.state);
+                // ⭐ FIXED: Update UI berdasarkan user settings, bukan execution state
+                updateUIFromUserSettings(data.state, data.executionState);
             } else if (data.type === 'playlist') {
-                // ⭐ UPDATED: Gunakan fixed playlist, abaikan playlist dari device
                 console.log('📻 Received playlist from device, but using fixed playlist instead');
                 populateSongDropdownWithFixedPlaylist();
             } else if (data.type === 'rtcTime') {
-                // ⭐ NEW: Handle RTC time update
                 handleRTCTimeUpdate(data);
             } else if (data.type === 'rtcCalibrated') {
-                // ⭐ NEW: Handle RTC calibration response
                 handleRTCCalibrationResponse(data);
             }
         } catch (e) {
@@ -237,33 +219,27 @@ function initializeDeviceDetailPage() {
         }
     }
 
-    // Pasang semua event listener untuk elemen UI
     setupEventListeners();
-    setupRTCCalibration(); // Setup RTC calibration
+    setupRTCCalibration();
 }
 
 // =================================================================
 // NEW: RTC TIME FUNCTIONS
 // =================================================================
 
-/**
- * Handle RTC time update from ESP32
- */
 function handleRTCTimeUpdate(data) {
     console.log('🕐 RTC Time received from ESP32:', data);
 
-    // Parse RTC time from ESP32
     const rtcData = data.rtc;
     const rtcTime = new Date(
-        rtcData.year + 2000, // ESP32 sends year as offset from 2000
-        rtcData.month - 1,   // JS months are 0-based
+        rtcData.year,
+        rtcData.month - 1,
         rtcData.day,
         rtcData.hour,
         rtcData.minute,
         rtcData.second
     );
 
-    // Store RTC time and calculate offset
     rtcTimeReceived = rtcTime;
     rtcTimeReceivedAt = new Date();
     rtcTimeOffset = rtcTimeReceived.getTime() - rtcTimeReceivedAt.getTime();
@@ -272,13 +248,9 @@ function handleRTCTimeUpdate(data) {
     console.log(`🕐 Browser Time: ${rtcTimeReceivedAt.toLocaleString()}`);
     console.log(`🕐 Offset: ${rtcTimeOffset / 1000} seconds`);
 
-    // Update display immediately
     updateRTCTimeDisplay();
 }
 
-/**
- * Handle RTC calibration response from ESP32
- */
 function handleRTCCalibrationResponse(data) {
     const calibrationMessage = document.getElementById('calibration-message');
     const calibrateButton = document.getElementById('rtc-calibrate-button');
@@ -287,7 +259,6 @@ function handleRTCCalibrationResponse(data) {
         calibrationMessage.textContent = '✅ RTC successfully calibrated with browser time!';
         calibrationMessage.style.color = '#4cd964';
 
-        // Reset offset since RTC is now synced
         rtcTimeOffset = 0;
         rtcTimeReceived = new Date();
         rtcTimeReceivedAt = new Date();
@@ -301,18 +272,14 @@ function handleRTCCalibrationResponse(data) {
 
     calibrateButton.disabled = false;
 
-    // Clear message after 3 seconds
     setTimeout(() => {
         calibrationMessage.textContent = '';
     }, 3000);
 }
 
-/**
- * Calculate current RTC time based on offset
- */
 function getCurrentRTCTime() {
     if (!rtcTimeReceived || !rtcTimeReceivedAt) {
-        return new Date(); // Fallback to browser time
+        return new Date();
     }
 
     const now = new Date();
@@ -322,9 +289,6 @@ function getCurrentRTCTime() {
     return estimatedRTCTime;
 }
 
-/**
- * Update RTC time display in UI
- */
 function updateRTCTimeDisplay() {
     const rtcTime = getCurrentRTCTime();
     const timeStr = rtcTime.toTimeString().slice(0, 8);
@@ -333,9 +297,6 @@ function updateRTCTimeDisplay() {
     if (rtcTimeValue) rtcTimeValue.textContent = timeStr;
 }
 
-/**
- * Update time comparison display
- */
 function updateTimeComparison() {
     const browserTime = new Date();
     const rtcTime = getCurrentRTCTime();
@@ -352,17 +313,12 @@ function updateTimeComparison() {
     }
 }
 
-/**
- * Start RTC time display updates
- */
 function startRTCTimeUpdates() {
-    // Update displays every second
     setInterval(() => {
         updateRTCTimeDisplay();
         updateTimeComparison();
     }, 1000);
 
-    // Request RTC time update every 30 seconds to maintain accuracy
     setInterval(() => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
             sendCommand('getRTC');
@@ -370,27 +326,22 @@ function startRTCTimeUpdates() {
     }, 30000);
 }
 
-/**
- * Setup RTC calibration button
- */
 function setupRTCCalibration() {
     const calibrateButton = document.getElementById('rtc-calibrate-button');
     const calibrationMessage = document.getElementById('calibration-message');
 
     if (calibrateButton) {
         calibrateButton.addEventListener('click', function () {
-            // Show calibration in progress
             calibrationMessage.textContent = '🔄 Calibrating RTC...';
             calibrationMessage.style.color = '#f7a325';
             calibrateButton.disabled = true;
 
-            // Get current browser time
             const browserTime = new Date();
             const calibrationData = {
                 year: browserTime.getFullYear(),
-                month: browserTime.getMonth() + 1, // JS months are 0-based, ESP32 expects 1-based
+                month: browserTime.getMonth() + 1,
                 day: browserTime.getDate(),
-                dayOfWeek: browserTime.getDay() + 1, // JS: 0=Sunday, ESP32: 1=Sunday
+                dayOfWeek: browserTime.getDay() + 1,
                 hour: browserTime.getHours(),
                 minute: browserTime.getMinutes(),
                 second: browserTime.getSeconds()
@@ -402,17 +353,12 @@ function setupRTCCalibration() {
     }
 }
 
-/** 
- * ⭐ NEW FUNCTION: Populate dropdown dengan updated fixed playlist
- */
 function populateSongDropdownWithFixedPlaylist() {
     const songSelect = document.getElementById('song-select');
     if (!songSelect) return;
 
-    // Clear existing options
     songSelect.innerHTML = '';
 
-    // Add updated tracks dari FIXED_RELAX_PLAYLIST
     FIXED_RELAX_PLAYLIST.forEach(track => {
         const option = document.createElement('option');
         option.value = track.trackNumber;
@@ -423,7 +369,6 @@ function populateSongDropdownWithFixedPlaylist() {
     console.log(`📻 Dropdown populated with ${FIXED_RELAX_PLAYLIST.length} updated tracks`);
 }
 
-/** Mengirim perintah dalam format JSON ke ESP32. */
 function sendCommand(command, value) {
     if (websocket && websocket.readyState === WebSocket.OPEN) {
         const message = JSON.stringify({ command, value });
@@ -434,9 +379,12 @@ function sendCommand(command, value) {
     }
 }
 
-/** Menyiapkan semua event listener untuk elemen UI yang interaktif. */
+// =================================================================
+// ⭐ FIXED: SETUP EVENT LISTENERS - KIRIM USER SETTING COMMANDS
+// =================================================================
+
 function setupEventListeners() {
-    // Listener untuk semua toggle
+    // ⭐ FIXED: Listener untuk semua toggle - kirim user setting commands
     document.querySelectorAll('.toggle').forEach(toggle => {
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -446,19 +394,30 @@ function setupEventListeners() {
 
             console.log(`🔄 Toggle clicked: ${toggleId}, feature: ${feature}, will be: ${isActive}`);
 
-            // ⭐ IMPROVED: Better dependency check dengan debugging
             if (e.currentTarget.classList.contains('dependent-disabled')) {
                 console.log(`❌ Toggle ${toggleId} blocked - timer not confirmed yet`);
                 showTemporaryMessage('Aktifkan dan konfirmasi Timer terlebih dahulu!');
                 return;
             }
 
-            console.log(`✅ Sending command: ${feature}-toggle with value: ${isActive}`);
-            sendCommand(`${feature}-toggle`, isActive);
+            // ⭐ FIXED: Kirim user setting command (akan update userSettings.*.enabled)
+            let command;
+            if (feature === 'aroma') {
+                command = 'aroma-toggle'; // Will update userSettings.aromatherapy.enabled
+            } else if (feature === 'music') {
+                command = 'music-toggle'; // Will update userSettings.music.enabled
+            } else if (feature === 'alarm') {
+                command = 'alarm-toggle'; // Will update userSettings.alarm.enabled
+            } else {
+                command = `${feature}-toggle`;
+            }
+
+            console.log(`✅ Sending USER SETTING command: ${command} with value: ${isActive}`);
+            sendCommand(command, isActive);
         });
     });
 
-    // Intensity slider with 10% steps
+    // Intensity slider
     document.getElementById('intensity-slider').addEventListener('input', e => {
         let value = parseInt(e.currentTarget.value);
         value = Math.round(value / 10) * 10;
@@ -488,13 +447,13 @@ function setupEventListeners() {
     // Volume slider
     document.getElementById('volume-slider').addEventListener('input', e => {
         let value = parseInt(e.currentTarget.value);
-        value = Math.round(value / 10) * 10;  // Round ke kelipatan 10
+        value = Math.round(value / 10) * 10;
         e.currentTarget.value = value;
         e.currentTarget.nextElementSibling.textContent = `${value}%`;
         sendCommand('music-volume', value);
     });
 
-    // ⭐ UPDATED: Music track selection menggunakan fixed playlist track numbers
+    // Music track selection
     document.getElementById('song-select').addEventListener('change', e => {
         const track = parseInt(e.currentTarget.value);
         console.log(`🎵 Music track selected: ${track} (NO REPEAT MODE)`);
@@ -528,11 +487,18 @@ function setupEventListeners() {
     });
 }
 
-/** Memperbarui seluruh UI berdasarkan satu objek 'state' dari ESP32. */
-function updateUIFromState(state) {
+// =================================================================
+// ⭐ FIXED: UPDATE UI BERDASARKAN USER SETTINGS (BUKAN EXECUTION STATE)
+// =================================================================
+
+/**
+ * ⭐ FIXED: Update UI berdasarkan USER SETTINGS (persistent config)
+ * bukan execution state (runtime), sehingga toggle tetap ON meski di luar window
+ */
+function updateUIFromUserSettings(state, executionState) {
     if (!state) return;
 
-    console.log('🔄 Updating UI from state:', state);
+    console.log('🔄 FIXED: Updating UI from USER SETTINGS (not execution state):', state);
 
     // --- Update Timer ---
     const timerCard = document.getElementById('timer-card');
@@ -589,44 +555,66 @@ function updateUIFromState(state) {
         lightControls.classList.remove('expanded');
     }
 
-    // ⭐ UPDATED: Update Aromatherapy dengan logging
+    // ⭐ FIXED: Update Aromatherapy berdasarkan USER SETTING (enabled), bukan execution state
     const aromaToggle = document.getElementById('aroma-toggle');
     const aromaStatus = document.getElementById('aroma-status');
     if (aromaToggle && aromaStatus && state.aromatherapy) {
-        aromaToggle.classList.toggle('active', state.aromatherapy.on);
-        aromaStatus.textContent = state.aromatherapy.on ? 'ON' : 'OFF';
-        console.log('🌿 Aromatherapy toggle updated:', state.aromatherapy.on);
+        // ⭐ FIXED: Gunakan state.aromatherapy.enabled (user setting) bukan .on (execution)
+        const userEnabled = state.aromatherapy.enabled || state.aromatherapy.on; // Backward compatibility
+        aromaToggle.classList.toggle('active', userEnabled);
+
+        // ⭐ Show execution status in status text, tapi toggle tetap reflect user setting
+        if (executionState && executionState.aromatherapyActive) {
+            aromaStatus.textContent = 'RUNNING'; // Hardware sedang jalan
+        } else if (userEnabled) {
+            aromaStatus.textContent = 'ENABLED'; // User sudah enable, tapi belum waktunya
+        } else {
+            aromaStatus.textContent = 'OFF'; // User disable
+        }
+
+        console.log('🌿 Aromatherapy - User Setting:', userEnabled,
+            'Execution:', executionState?.aromatherapyActive || false);
     }
 
-    // ⭐ UPDATED: Update Alarm dengan logging
+    // ⭐ FIXED: Update Alarm berdasarkan USER SETTING
     const alarmToggle = document.getElementById('alarm-toggle');
     const alarmStatus = document.getElementById('alarm-status');
     if (alarmToggle && alarmStatus && state.alarm) {
-        alarmToggle.classList.toggle('active', state.alarm.on);
-        alarmStatus.textContent = state.alarm.on ? 'ON' : 'OFF';
-        console.log('⏰ Alarm toggle updated:', state.alarm.on);
+        const userEnabled = state.alarm.enabled || state.alarm.on; // Backward compatibility
+        alarmToggle.classList.toggle('active', userEnabled);
+        alarmStatus.textContent = userEnabled ? 'ENABLED' : 'OFF';
+        console.log('⏰ Alarm - User Setting:', userEnabled);
     }
 
-    // ⭐ UPDATED: Update Music dengan logging dan updated playlist
+    // ⭐ FIXED: Update Music berdasarkan USER SETTING
     const musicToggle = document.getElementById('music-toggle');
     const musicStatus = document.getElementById('music-status');
     const songSelect = document.getElementById('song-select');
     const volumeSlider = document.getElementById('volume-slider');
 
     if (musicToggle && musicStatus && state.music) {
-        musicToggle.classList.toggle('active', state.music.on);
-        musicStatus.textContent = state.music.on ? 'ON (1h max)' : 'OFF'; // ⭐ UPDATED: Show 1h max indicator
-        console.log('🎵 Music toggle updated:', state.music.on, '(NO REPEAT MODE)');
+        // ⭐ FIXED: Gunakan state.music.enabled (user setting) bukan .on (execution)
+        const userEnabled = state.music.enabled || state.music.on; // Backward compatibility
+        musicToggle.classList.toggle('active', userEnabled);
 
-        // ⭐ UPDATED: Set dropdown value dari updated playlist
+        // ⭐ Show execution status in status text, tapi toggle tetap reflect user setting
+        if (executionState && executionState.musicActive) {
+            musicStatus.textContent = 'PLAYING'; // Hardware sedang play
+        } else if (userEnabled) {
+            musicStatus.textContent = 'ENABLED'; // User sudah enable, tapi belum waktunya
+        } else {
+            musicStatus.textContent = 'OFF'; // User disable
+        }
+
+        console.log('🎵 Music - User Setting:', userEnabled,
+            'Execution:', executionState?.musicActive || false);
+
+        // Update track dan volume controls
         if (songSelect && state.music.track) {
-            // Pastikan track yang dipilih ada di updated fixed playlist
             const trackExists = FIXED_RELAX_PLAYLIST.some(track => track.trackNumber === state.music.track);
             if (trackExists) {
                 songSelect.value = state.music.track;
-                console.log(`🎵 Music track set to: ${state.music.track} (NO REPEAT)`);
             } else {
-                console.warn(`⚠️ Invalid track from device: ${state.music.track}, using first track`);
                 songSelect.value = FIXED_RELAX_PLAYLIST[0].trackNumber;
             }
         }
@@ -637,9 +625,18 @@ function updateUIFromState(state) {
             if (volumeValue) volumeValue.textContent = `${state.music.volume}%`;
         }
     }
+
+    // ⭐ Log execution state untuk debugging
+    if (executionState) {
+        console.log('📊 Current Execution State:', {
+            inTimerWindow: executionState.inTimerWindow,
+            inMusicWindow: executionState.inMusicWindow,
+            aromatherapyActive: executionState.aromatherapyActive,
+            musicActive: executionState.musicActive
+        });
+    }
 }
 
-/** Mengunci atau membuka fitur-fitur yang bergantung pada Timer. */
 function enableDependentFeatures(isEnabled) {
     console.log(`🔓 ${isEnabled ? 'Enabling' : 'Disabling'} dependent features`);
 
@@ -675,7 +672,6 @@ function enableDependentFeatures(isEnabled) {
         }
     });
 
-    // ⭐ ADDITIONAL: Manually ensure specific toggles are enabled when timer confirmed
     if (isEnabled) {
         const criticalToggles = ['aroma-toggle', 'alarm-toggle', 'music-toggle'];
         criticalToggles.forEach(toggleId => {
@@ -694,10 +690,9 @@ function updateConnectionStatus(isConnected) {
     if (!statusEl || !imgEl) return;
 
     statusEl.textContent = isConnected ? 'Connected' : 'Disconnected. Reconnecting...';
-    imgEl.src = 'media/logo.png';
+    imgEl.src = 'logo.png';
 }
 
-/** Menampilkan pesan sementara di bagian bawah layar. */
 function showTemporaryMessage(message) {
     const existingMessage = document.querySelector('.temp-message');
     if (existingMessage) existingMessage.remove();
@@ -714,7 +709,6 @@ function showTemporaryMessage(message) {
     }, 3000);
 }
 
-/** Membuat efek bintang di latar belakang. */
 function createStars() {
     const starsContainer = document.getElementById('stars');
     if (!starsContainer) return;
